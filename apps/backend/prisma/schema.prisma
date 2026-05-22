@@ -1,0 +1,381 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SELLER
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  VNPAY
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum CancellationStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum PromotionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ClearanceLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ReportType {
+  SALES
+  INVENTORY
+  USERS
+  ORDERS
+}
+
+enum Variants {
+  SIZE
+  COLOR
+  MATERIAL
+}
+
+model User {
+  id            String         @id @default(cuid())
+  username      String
+  email         String         @unique
+  password      String?
+  emailVerified DateTime?
+  role          UserRole       @default(CUSTOMER)
+  isOAuth       Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  customer      Customer?
+  seller        Seller?
+  admin         Admin?
+  notifications Notification[]
+  refreshToken  String?
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  image       String?
+  cart        Cart?
+  reviews     Review[]
+  addresses   Address[]
+  orders      Order[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+}
+
+model Seller {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  email     String?
+  image     String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Admin {
+  id         String      @id @default(cuid())
+  userId     String      @unique
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  promotions Promotion[]
+  reports    Report[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model VerificationToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model Product {
+  id              String           @id @default(cuid())
+  name            String
+  description     String
+  stockQuantity   Int
+  images          String[]
+  createdBy       String
+  price           Float
+  seller          Seller           @relation(fields: [createdBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  promotions      Promotion[]      @relation("PromotionProducts")
+  categoryId      String
+  category        Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  variantTypes    Variants[]
+  variantOptions  Json
+  productVariants ProductVariant[]
+  is_deleted      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  promotions  Promotion[] @relation("PromotionCategories")
+  products    Product[]
+}
+
+model ProductVariant {
+  id                String      @id @default(cuid())
+  quantity          Int
+  variantAttributes Json
+  productId         String
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  images            String[]
+  priceAdjustment   Float       @default(0)
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Promotion {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  image             String?
+  startDate         DateTime
+  endDate           DateTime
+  createdBy         String
+  admin             Admin            @relation(fields: [createdBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  status            PromotionStatus  @default(ACTIVE)
+  coupons           Coupon[]
+  clearanceEvents   ClearanceEvent[]
+  appliedProducts   Product[]        @relation("PromotionProducts")
+  appliedCategories Category[]       @relation("PromotionCategories")
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model Coupon {
+  id                 String    @id @default(cuid())
+  promotionId        String
+  promotion          Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  code               String    @unique
+  discountPercentage Float
+  maxUsage           Int
+  usageCount         Int       @default(0)
+}
+
+model ClearanceEvent {
+  id             String         @id @default(cuid())
+  promotionId    String
+  promotion      Promotion      @relation(fields: [promotionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  clearanceLevel ClearanceLevel
+}
+
+model Order {
+  id           String        @id @default(cuid())
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  addressId    String
+  address      Address       @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orderDate    DateTime      @default(now())
+  status       OrderStatus   @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  orderItems   OrderItem[]
+  payment      Payment?
+  return       Return?
+  cancellation Cancellation?
+}
+
+model OrderItem {
+  id               String         @id @default(cuid())
+  orderId          String
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  quantity         Int
+  review           Review?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String        @unique
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  amount      Float
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  paymentDate DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Return {
+  id        String       @id @default(cuid())
+  orderId   String       @unique
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reason    String
+  status    ReturnStatus @default(REQUESTED)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Cancellation {
+  id        String             @id @default(cuid())
+  orderId   String             @unique
+  order     Order              @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reason    String
+  status    CancellationStatus @default(REQUESTED)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model Review {
+  id          String    @id @default(cuid())
+  rating      Int
+  comment     String?
+  images      String[]
+  reviewDate  DateTime  @default(now())
+  orderItemId String    @unique
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  customerId String     @unique
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cartItems  CartItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model CartItem {
+  id               String         @id @default(cuid())
+  cartId           String
+  cart             Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  quantity         Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Report {
+  id          String     @id @default(cuid())
+  reportType  ReportType
+  parameters  Json?
+  data        Json
+  generatedBy String
+  admin       Admin      @relation(fields: [generatedBy], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model SystemParameter {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Address {
+  id          String    @id @default(cuid())
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orders      Order[]
+  phoneNumber String
+  address     String
+  street      String?
+  ward        String?
+  district    String?
+  province    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum MembershipStatus {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+model Membership {
+  id         String           @id @default(cuid())
+  customerId String
+  customer   Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  membership MembershipStatus @default(BRONZE)
+  spent      Float
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
