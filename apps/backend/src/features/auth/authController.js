@@ -4,6 +4,30 @@ const {
   errorResponse,
 } = require("../../utils/responseHelpers");
 
+const getCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
+const getPublicCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: false,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
 const register = async (req, res) => {
   try {
     const { username, email, password, password_confirmation } = req.body;
@@ -61,13 +85,18 @@ const login = async (req, res) => {
 
     const result = await authService.login({ email, password });
 
-    // Set access token as httpOnly, Secure cookie
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: true, // true in production
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie("accessToken", result.accessToken, getCookieOptions());
+    res.cookie("authRole", result.user.role, getPublicCookieOptions());
+    res.cookie(
+      "authUser",
+      JSON.stringify({
+        id: result.user.id,
+        email: result.user.email,
+        role: result.user.role,
+        username: result.user.username ?? result.user.name ?? "",
+      }),
+      getPublicCookieOptions(),
+    );
 
     // Return user data only, not the token
     successResponse(res, 200, { user: result.user, accessToken: result.accessToken }, "Login successful");
@@ -86,10 +115,23 @@ const logout = async (req, res) => {
     await authService.logout(token);
     
     // Clear the httpOnly cookie
-    res.clearCookie('accessToken', {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+    });
+    res.clearCookie("authRole", {
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+    });
+    res.clearCookie("authUser", {
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
     });
     
     successResponse(res, 200, null, "Logout successful");
