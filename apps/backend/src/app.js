@@ -25,13 +25,22 @@ const paymentRoutes = require("./features/payment/paymentRoutes");
 const systemRoutes = require("./features/system/systemRoutes");
 const { errorHandler, notFoundHandler } = require("./middleware/index");
 const app = express();
+
+const defaultAllowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+];
+
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(helmet());
 app.use(cors({
-    origin: [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://i-tech-shop-online.vercel.app"
-    ],
+    origin: allowedOrigins.length > 0 ? allowedOrigins : defaultAllowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
