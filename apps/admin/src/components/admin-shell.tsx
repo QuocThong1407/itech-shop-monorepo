@@ -21,12 +21,20 @@ const navItems: NavItem[] = [
   { label: "Coupons", href: "/coupons" },
 ];
 
+const reportItems: NavItem[] = [
+  { label: "Revenue Report", href: "/reports/revenue" },
+  { label: "Activity Report", href: "/reports/activity" },
+];
+
 function getTitle(pathname: string) {
   if (pathname === "/users") return "Users";
   if (pathname === "/categories") return "Categories";
   if (pathname === "/products") return "Products";
   if (pathname === "/promotions") return "Promotions";
   if (pathname === "/coupons") return "Coupons";
+  if (pathname === "/reports/revenue") return "Revenue Report";
+  if (pathname === "/reports/activity") return "Activity Report";
+  if (pathname === "/reports") return "Reports";
   return "Dashboard";
 }
 
@@ -34,9 +42,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(pathname.startsWith("/reports"));
 
   useEffect(() => {
     setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname.startsWith("/reports")) {
+      setReportsOpen(true);
+    }
   }, [pathname]);
 
   const title = useMemo(() => getTitle(pathname), [pathname]);
@@ -91,6 +106,67 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setReportsOpen((value) => !value)}
+                className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
+                  pathname.startsWith("/reports")
+                    ? "bg-sky-50 text-[#008ECC] shadow-[inset_0_0_0_1px_rgba(0,142,204,0.18)]"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <span
+                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-sm font-semibold transition ${
+                    pathname.startsWith("/reports")
+                      ? "bg-white text-[#008ECC] shadow-[0_10px_24px_rgba(0,142,204,0.15)]"
+                      : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  R
+                </span>
+
+                {!collapsed ? (
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Report</p>
+                    <p className="text-xs text-slate-500">Revenue and activity insights</p>
+                  </div>
+                ) : null}
+
+                {!collapsed ? (
+                  <span className="text-xs font-semibold text-slate-400">
+                    {reportsOpen ? "−" : "+"}
+                  </span>
+                ) : null}
+              </button>
+
+              {reportsOpen && !collapsed ? (
+                <div className="mt-2 space-y-1 pl-3">
+                  {reportItems.map((item) => {
+                    const active = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition ${
+                          active
+                            ? "bg-sky-50 text-[#008ECC]"
+                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                      >
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            active ? "bg-[#008ECC]" : "bg-slate-300"
+                          }`}
+                        />
+                        <span className="text-sm font-medium">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
           </nav>
 
           <div className="border-t border-slate-200 p-3">
