@@ -7,7 +7,6 @@ import { useState, type FormEvent } from "react";
 import { getAppHomePath, getRoleFromPath, normalizeAuthRole } from "@itech/shared/auth";
 import { Badge } from "@itech/shared";
 import Logo from "@itech/shared/assets/logo.png";
-import LoginImage from "@itech/shared/assets/LoginImage.png";
 
 type LoginResponse = {
   success?: boolean;
