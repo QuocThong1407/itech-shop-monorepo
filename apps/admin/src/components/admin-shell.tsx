@@ -16,6 +16,7 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/" },
   { label: "Users", href: "/users" },
   { label: "Categories", href: "/categories" },
+  { label: "Products", href: "/products" },
   { label: "Promotions", href: "/promotions" },
   { label: "Coupons", href: "/coupons" },
 ];
@@ -23,6 +24,7 @@ const navItems: NavItem[] = [
 function getTitle(pathname: string) {
   if (pathname === "/users") return "Users";
   if (pathname === "/categories") return "Categories";
+  if (pathname === "/products") return "Products";
   if (pathname === "/promotions") return "Promotions";
   if (pathname === "/coupons") return "Coupons";
   return "Dashboard";
