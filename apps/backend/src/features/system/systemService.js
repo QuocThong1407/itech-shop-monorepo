@@ -242,11 +242,13 @@ const upsertMembershipTier = async (tierName, config) => {
   };
 
   // Kiểm tra đã tồn tại chưa
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("SystemParameter")
     .select("id")
     .eq("key", configKey)
-    .single();
+    .maybeSingle();
+
+  if (existingError) throw existingError;
 
   if (existing) {
     // Update
