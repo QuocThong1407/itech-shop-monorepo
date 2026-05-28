@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { label: "Products", href: "/products" },
   { label: "Promotions", href: "/promotions" },
   { label: "Coupons", href: "/coupons" },
+  { label: "Settings", href: "/settings" },
 ];
 
 const reportItems: NavItem[] = [
@@ -32,6 +33,7 @@ function getTitle(pathname: string) {
   if (pathname === "/products") return "Products";
   if (pathname === "/promotions") return "Promotions";
   if (pathname === "/coupons") return "Coupons";
+  if (pathname === "/settings") return "Settings";
   if (pathname === "/reports/revenue") return "Revenue Report";
   if (pathname === "/reports/activity") return "Activity Report";
   if (pathname === "/reports") return "Reports";
@@ -86,7 +88,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-2 transition ${
                     active
                       ? "bg-sky-50 text-[#008ECC] shadow-[inset_0_0_0_1px_rgba(0,142,204,0.18)]"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
@@ -111,7 +113,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => setReportsOpen((value) => !value)}
-                className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
+                className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition ${
                   pathname.startsWith("/reports")
                     ? "bg-sky-50 text-[#008ECC] shadow-[inset_0_0_0_1px_rgba(0,142,204,0.18)]"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"

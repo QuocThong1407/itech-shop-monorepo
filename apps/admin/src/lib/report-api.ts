@@ -16,6 +16,16 @@ export function startDate(daysAgo: number) {
   return date.toISOString().slice(0, 10);
 }
 
+export function buildReportExportHref(
+  kind: "revenue" | "activity",
+  params: Record<string, string>,
+) {
+  const search = new URLSearchParams(params);
+  const base =
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
+  return `${base}/reports/${kind}/excel?${search.toString()}`;
+}
+
 export async function readReportJson<T>(path: string): Promise<T> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken")?.value;

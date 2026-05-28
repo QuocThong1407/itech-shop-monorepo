@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import {
+  buildReportExportHref,
   formatReportDate,
   formatReportMoney,
   readReportJson,
@@ -98,6 +99,11 @@ export default async function RevenueReportPage({
 
   const rows = report.rows;
   const maxNet = Math.max(...rows.map((row) => row.netRevenue), 1);
+  const exportHref = buildReportExportHref("revenue", {
+    startDate: rangeStart,
+    endDate: rangeEnd,
+    groupBy,
+  });
 
   return (
     <div className="space-y-6">
@@ -156,12 +162,20 @@ export default async function RevenueReportPage({
                 <option value="year">Year</option>
               </select>
             </label>
-            <button
-              type="submit"
-              className="sm:col-span-2 h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
-            >
-              Apply filters
-            </button>
+            <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="submit"
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+              >
+                Apply filters
+              </button>
+              <a
+                href={exportHref}
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                Export Excel
+              </a>
+            </div>
           </form>
         </div>
       </section>
@@ -349,4 +363,3 @@ export default async function RevenueReportPage({
     </div>
   );
 }
-

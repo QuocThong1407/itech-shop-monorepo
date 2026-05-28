@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import {
+  buildReportExportHref,
   formatReportDate,
   readReportJson,
   startDate,
@@ -113,6 +114,10 @@ export default async function ActivityReportPage({
 
   const roleCounts = report.summary.newUsersByRole;
   const roleTotal = Object.values(roleCounts).reduce((sum, value) => sum + value, 0);
+  const exportHref = buildReportExportHref("activity", {
+    startDate: rangeStart,
+    endDate: rangeEnd,
+  });
 
   return (
     <div className="space-y-6">
@@ -157,12 +162,20 @@ export default async function ActivityReportPage({
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
               />
             </label>
-            <button
-              type="submit"
-              className="sm:col-span-2 h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
-            >
-              Apply filters
-            </button>
+            <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="submit"
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+              >
+                Apply filters
+              </button>
+              <a
+                href={exportHref}
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                Export Excel
+              </a>
+            </div>
           </form>
         </div>
       </section>
