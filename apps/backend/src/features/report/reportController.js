@@ -8,7 +8,8 @@ const {
 //Query: startDate, endDate, groupBy(day|month|year), format(json|excel)
 const getRevenueReport = async (req, res) => {
   try {
-    const { startDate, endDate, groupBy = "day", format = "json" } = req.query;
+    const { startDate, endDate, groupBy = "day" } = req.query;
+    const format = req.query.format || (req.path.endsWith("/excel") ? "excel" : "json");
 
     if (!startDate || !endDate) {
       return errorResponse(res, 400, "startDate and endDate are required");
@@ -45,16 +46,9 @@ const getRevenueReport = async (req, res) => {
     if (format === "excel") {
       const buffer = await reportService.exportRevenueToExcel(result);
 
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      );
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="revenue_report.xlsx"`,
-      );
-
-      return res.send(buffer);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", 'attachment; filename="revenue_report.xlsx"');
+      return res.send(Buffer.from(buffer));
     }
 
     return successResponse(res, 200, result, "Revenue report generated");
@@ -68,7 +62,8 @@ const getRevenueReport = async (req, res) => {
 //Query: startDate, endDate, format(json|excel)
 const getActivityReport = async (req, res) => {
   try {
-    const { startDate, endDate, format = "json" } = req.query;
+    const { startDate, endDate } = req.query;
+    const format = req.query.format || (req.path.endsWith("/excel") ? "excel" : "json");
 
     if (!startDate || !endDate) {
       return errorResponse(res, 400, "startDate and endDate are required");
@@ -100,16 +95,9 @@ const getActivityReport = async (req, res) => {
     if (format === "excel") {
       const buffer = await reportService.exportActivityToExcel(result);
 
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      );
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="activity_report.xlsx"`,
-      );
-
-      return res.send(buffer);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", 'attachment; filename="activity_report.xlsx"');
+      return res.send(Buffer.from(buffer));
     }
 
     return successResponse(res, 200, result, "Activity report generated");
