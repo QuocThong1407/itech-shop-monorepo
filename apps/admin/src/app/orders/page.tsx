@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { apiJson, formatDateTime, formatMoney } from "../../lib/admin-api";
 
@@ -72,27 +73,12 @@ const statusTabs = [
   "CANCELLED",
 ] as const;
 
+const paymentTabs = ["ALL", "SUCCESS", "PENDING", "FAILED"] as const;
+
 const PAGE_SIZE = 8;
 
 function normalizeStatus(value?: string) {
   return (value || "UNKNOWN").toUpperCase();
-}
-
-function getStatusTone(status?: string) {
-  switch (normalizeStatus(status)) {
-    case "PENDING":
-      return "bg-amber-50 text-amber-700 ring-amber-200";
-    case "CONFIRMED":
-      return "bg-sky-50 text-sky-700 ring-sky-200";
-    case "SHIPPED":
-      return "bg-indigo-50 text-indigo-700 ring-indigo-200";
-    case "DELIVERED":
-      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-    case "CANCELLED":
-      return "bg-rose-50 text-rose-700 ring-rose-200";
-    default:
-      return "bg-slate-50 text-slate-700 ring-slate-200";
-  }
 }
 
 function getStatusLabel(status?: string) {
@@ -107,6 +93,53 @@ function getStatusLabel(status?: string) {
       return "Delivered";
     case "CANCELLED":
       return "Cancelled";
+    default:
+      return "Unknown";
+  }
+}
+
+function getStatusSelectClass(status?: string) {
+  switch (normalizeStatus(status)) {
+    case "PENDING":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "CONFIRMED":
+      return "border-sky-200 bg-sky-50 text-sky-700";
+    case "SHIPPED":
+      return "border-indigo-200 bg-indigo-50 text-indigo-700";
+    case "DELIVERED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "CANCELLED":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-700";
+  }
+}
+
+function normalizePaymentStatus(value?: string) {
+  return (value || "UNKNOWN").toUpperCase();
+}
+
+function getPaymentTone(status?: string) {
+  switch (normalizePaymentStatus(status)) {
+    case "SUCCESS":
+      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+    case "PENDING":
+      return "bg-amber-50 text-amber-700 ring-amber-200";
+    case "FAILED":
+      return "bg-rose-50 text-rose-700 ring-rose-200";
+    default:
+      return "bg-slate-50 text-slate-700 ring-slate-200";
+  }
+}
+
+function getPaymentLabel(status?: string) {
+  switch (normalizePaymentStatus(status)) {
+    case "SUCCESS":
+      return "Successful";
+    case "PENDING":
+      return "Pending";
+    case "FAILED":
+      return "Failed";
     default:
       return "Unknown";
   }
@@ -161,7 +194,7 @@ function StatCard({
 }) {
   return (
     <article
-      className={`rounded-[1.5rem] border p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
+      className={`rounded-[1.75rem] border p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
     >
       <p className="text-xs uppercase tracking-[0.2em] opacity-70">{label}</p>
       <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
@@ -170,11 +203,13 @@ function StatCard({
 }
 
 export default function AdminOrdersPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [activeTab, setActiveTab] =
     useState<(typeof statusTabs)[number]>("ALL");
+  const [paymentTab, setPaymentTab] =
+    useState<(typeof paymentTabs)[number]>("ALL");
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
@@ -182,12 +217,11 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadOrders = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const result = await apiJson<OrdersResponse>("/orders?page=1&limit=2000");
       setOrders(result.orders || []);
       setPage(1);
+      setError(null);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Failed to load orders.");
@@ -197,6 +231,7 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadOrders();
   }, []);
 
@@ -227,22 +262,21 @@ export default function AdminOrdersPage() {
     const keyword = searchText.trim().toLowerCase();
 
     return orders.filter((order) => {
+      const paymentStatus = normalizePaymentStatus(order.Payment?.[0]?.status);
       const matchesTab =
         activeTab === "ALL" || normalizeStatus(order.status) === activeTab;
+      const matchesPayment =
+        paymentTab === "ALL" || paymentStatus === paymentTab;
       const matchesSearch =
         keyword.length === 0 || getOrderSearchText(order).includes(keyword);
-      return matchesTab && matchesSearch;
+      return matchesTab && matchesPayment && matchesSearch;
     });
-  }, [activeTab, orders, searchText]);
+  }, [activeTab, orders, paymentTab, searchText]);
 
   const pagedOrders = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filteredOrders.slice(start, start + PAGE_SIZE);
   }, [filteredOrders, page]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [activeTab, searchText]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
 
@@ -319,6 +353,20 @@ export default function AdminOrdersPage() {
   const payment = selectedOrder?.Payment?.[0];
   const orderItems = selectedOrder?.OrderItem || [];
   const selectedAddress = selectedOrder ? getAddressText(selectedOrder) : "";
+  const handleStatusTabChange = (tab: (typeof statusTabs)[number]) => {
+    setActiveTab(tab);
+    setPage(1);
+  };
+
+  const handlePaymentTabChange = (tab: (typeof paymentTabs)[number]) => {
+    setPaymentTab(tab);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    setPage(1);
+  };
 
   return (
     <>
@@ -390,7 +438,7 @@ export default function AdminOrdersPage() {
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => handleStatusTabChange(tab)}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                       active
                         ? "bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.18)]"
@@ -404,19 +452,42 @@ export default function AdminOrdersPage() {
 
               <button
                 type="button"
-                onClick={() => void loadOrders()}
+                onClick={() => {
+                  setLoading(true);
+                  void loadOrders();
+                }}
                 className="ml-auto inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={loading || actionLoading}
               >
                 {loading ? "Loading..." : "Refresh"}
               </button>
             </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {paymentTabs.map((tab) => {
+                const active = paymentTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => handlePaymentTabChange(tab)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      active
+                        ? "bg-slate-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)]"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {tab === "ALL" ? "All payments" : getPaymentLabel(tab)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex flex-col gap-4 px-5 pt-4 lg:flex-row lg:items-center lg:justify-between">
             <input
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => handleSearchChange(event.target.value)}
               placeholder="Search order ID, customer, address, payment method..."
               className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100 lg:max-w-md"
             />
@@ -434,12 +505,12 @@ export default function AdminOrdersPage() {
               <table className="w-full table-fixed divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr className="text-left text-xs uppercase tracking-[0.18em] text-slate-500">
-                    <th className="w-[16%] px-4 py-3">Order</th>
+                    <th className="w-[14%] px-4 py-3">Order</th>
                     <th className="w-[18%] px-4 py-3">Customer</th>
                     <th className="w-[18%] px-4 py-3">Address</th>
-                    <th className="w-[12%] px-4 py-3">Payment</th>
-                    <th className="w-[10%] px-4 py-3">Total</th>
-                    <th className="w-[10%] px-4 py-3">Status</th>
+                    <th className="w-[10%] px-4 py-3">Payment</th>
+                    <th className="w-[12%] px-4 py-3">Total</th>
+                    <th className="w-[12%] px-4 py-3">Status</th>
                     <th className="w-[16%] px-4 py-3">Actions</th>
                   </tr>
                 </thead>
@@ -491,25 +562,40 @@ export default function AdminOrdersPage() {
                               <p className="font-semibold text-slate-900">
                                 {paymentInfo?.method || "N/A"}
                               </p>
-                              <p className="text-xs text-slate-500">
-                                {paymentInfo?.status || "Unknown"}
-                              </p>
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${getPaymentTone(
+                                  paymentInfo?.status,
+                                )}`}
+                              >
+                                {getPaymentLabel(paymentInfo?.status)}
+                              </span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-sm font-semibold text-slate-900">
                             {formatMoney(paymentInfo?.amount || 0)}
                           </td>
                           <td className="px-4 py-4">
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getStatusTone(
+                            <select
+                              value={status}
+                              disabled={actionLoading}
+                              onChange={(event) =>
+                                void handleStatusChange(order, event.target.value)
+                              }
+                              className={`h-10 w-full rounded-2xl border px-3 text-sm font-semibold outline-none transition ${getStatusSelectClass(
                                 status,
                               )}`}
                             >
-                              {getStatusLabel(status)}
-                            </span>
+                              {statusTabs
+                                .filter((item) => item !== "ALL")
+                                .map((item) => (
+                                  <option key={item} value={item}>
+                                    {getStatusLabel(item)}
+                                  </option>
+                                ))}
+                            </select>
                           </td>
                           <td className="px-4 py-4">
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-nowrap gap-2 whitespace-nowrap">
                               <button
                                 type="button"
                                 onClick={() => void handleView(order)}
@@ -517,22 +603,6 @@ export default function AdminOrdersPage() {
                               >
                                 View
                               </button>
-                              <select
-                                value={status}
-                                disabled={actionLoading}
-                                onChange={(event) =>
-                                  void handleStatusChange(order, event.target.value)
-                                }
-                                className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
-                              >
-                                {statusTabs
-                                  .filter((item) => item !== "ALL")
-                                  .map((item) => (
-                                    <option key={item} value={item}>
-                                      {getStatusLabel(item)}
-                                    </option>
-                                  ))}
-                              </select>
                               {status === "PENDING" ? (
                                 <button
                                   type="button"
@@ -615,13 +685,24 @@ export default function AdminOrdersPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                       Status
                     </p>
-                    <span
-                      className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getStatusTone(
+                    <select
+                      value={normalizeStatus(selectedOrder.status)}
+                      disabled={actionLoading}
+                      onChange={(event) =>
+                        void handleStatusChange(selectedOrder, event.target.value)
+                      }
+                      className={`mt-2 h-10 w-full rounded-2xl border px-3 text-sm font-semibold outline-none transition ${getStatusSelectClass(
                         selectedOrder.status,
                       )}`}
                     >
-                      {getStatusLabel(selectedOrder.status)}
-                    </span>
+                      {statusTabs
+                        .filter((item) => item !== "ALL")
+                        .map((item) => (
+                          <option key={item} value={item}>
+                            {getStatusLabel(item)}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                   <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -638,9 +719,13 @@ export default function AdminOrdersPage() {
                     <p className="mt-2 text-sm font-semibold text-slate-950">
                       {payment?.method || "N/A"}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {payment?.status || "Unknown"}
-                    </p>
+                    <span
+                      className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getPaymentTone(
+                        payment?.status,
+                      )}`}
+                    >
+                      {getPaymentLabel(payment?.status)}
+                    </span>
                   </div>
                 </div>
 
@@ -681,27 +766,56 @@ export default function AdminOrdersPage() {
 
                 <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
                   <p className="text-sm font-semibold text-slate-900">Timeline</p>
-                  <div className="mt-4 space-y-3 text-sm text-slate-600">
-                    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-                      <span>Created</span>
-                      <span className="font-medium text-slate-900">
-                        {formatDateTime(
-                          selectedOrder.createdAt || selectedOrder.orderDate,
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-                      <span>Updated</span>
-                      <span className="font-medium text-slate-900">
-                        {formatDateTime(selectedOrder.updatedAt)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-                      <span>Paid at</span>
-                      <span className="font-medium text-slate-900">
-                        {formatDateTime(payment?.paymentDate)}
-                      </span>
-                    </div>
+                  <div className="mt-4 space-y-4">
+                    {[
+                      {
+                        label: "Order created",
+                        date: selectedOrder.createdAt || selectedOrder.orderDate,
+                        active: true,
+                        tone: "bg-sky-500",
+                      },
+                      {
+                        label: "Payment processed",
+                        date: payment?.paymentDate,
+                        active: Boolean(payment?.paymentDate),
+                        tone:
+                          normalizePaymentStatus(payment?.status) === "SUCCESS"
+                            ? "bg-emerald-500"
+                            : normalizePaymentStatus(payment?.status) ===
+                                "FAILED"
+                              ? "bg-rose-500"
+                              : "bg-amber-500",
+                      },
+                      {
+                        label: "Last status update",
+                        date: selectedOrder.updatedAt,
+                        active: Boolean(selectedOrder.updatedAt),
+                        tone: "bg-indigo-500",
+                      },
+                    ].map((event, index, array) => (
+                      <div key={event.label} className="relative pl-8">
+                        {index < array.length - 1 ? (
+                          <span className="absolute left-[10px] top-7 h-[calc(100%+0.75rem)] w-px bg-slate-200" />
+                        ) : null}
+                        <span
+                          className={`absolute left-0 top-1 grid h-5 w-5 place-items-center rounded-full ${
+                            event.active ? event.tone : "bg-slate-300"
+                          }`}
+                        >
+                          <span className="h-2 w-2 rounded-full bg-white" />
+                        </span>
+                        <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-sm font-semibold text-slate-900">
+                              {event.label}
+                            </span>
+                            <span className="text-sm text-slate-500">
+                              {formatDateTime(event.date)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -728,11 +842,15 @@ export default function AdminOrdersPage() {
                             <div className="flex items-start gap-4">
                               <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                                 {product?.images?.[0] ? (
-                                  <img
-                                    src={product.images[0]}
-                                    alt={product.name || "Product"}
-                                    className="h-full w-full object-cover"
-                                  />
+                                  <div className="relative h-full w-full">
+                                    <Image
+                                      src={product.images[0]}
+                                      alt={product.name || "Product"}
+                                      fill
+                                      sizes="64px"
+                                      className="object-cover"
+                                    />
+                                  </div>
                                 ) : (
                                   <div className="grid h-full w-full place-items-center text-[11px] text-slate-400">
                                     No image
@@ -778,23 +896,6 @@ export default function AdminOrdersPage() {
                     Admin actions
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <select
-                      value={normalizeStatus(selectedOrder.status)}
-                      disabled={actionLoading}
-                      onChange={(event) =>
-                        void handleStatusChange(selectedOrder, event.target.value)
-                      }
-                      className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none"
-                    >
-                      {statusTabs
-                        .filter((item) => item !== "ALL")
-                        .map((item) => (
-                          <option key={item} value={item}>
-                            {getStatusLabel(item)}
-                          </option>
-                        ))}
-                    </select>
-
                     {normalizeStatus(selectedOrder.status) === "PENDING" ? (
                       <button
                         type="button"
