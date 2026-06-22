@@ -128,7 +128,6 @@ export default function TinyMCEEditor({
           "link",
           "lists",
           "media",
-          "paste",
           "searchreplace",
           "table",
           "visualblocks",

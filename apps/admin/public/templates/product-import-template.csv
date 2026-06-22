@@ -1,0 +1,3 @@
+name,description,price,stockQuantity,categoryId,sellerUserId,variants
+Classic Sneakers,"<p>Lightweight sneakers for daily wear</p>",450000,25,YOUR_CATEGORY_ID,YOUR_SELLER_USER_ID,
+Oversized Tee,"<p>Premium cotton tee with two size variants</p>",320000,,YOUR_CATEGORY_ID,YOUR_SELLER_USER_ID,"[{""variantAttributes"":{""size"":""M"",""color"":""Black""},""quantity"":10,""priceAdjustment"":0},{""variantAttributes"":{""size"":""L"",""color"":""Black""},""quantity"":12,""priceAdjustment"":20000}]"
