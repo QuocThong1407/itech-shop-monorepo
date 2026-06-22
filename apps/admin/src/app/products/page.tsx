@@ -130,6 +130,17 @@ type ProductImportResult = {
   results: ProductImportResultRow[];
 };
 
+type ProductBulkDeleteResult = {
+  total: number;
+  deletedCount: number;
+  failureCount: number;
+  results: Array<{
+    id: string;
+    success: boolean;
+    error?: string;
+  }>;
+};
+
 type ModalMode = "view" | "edit" | "add" | null;
 
 type DraftState = {
@@ -429,6 +440,8 @@ export default function ProductsPage() {
   const [confirmDelete, setConfirmDelete] = useState<ProductRecord | null>(
     null,
   );
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importContinueOnError, setImportContinueOnError] = useState(true);
@@ -473,6 +486,9 @@ export default function ProductsPage() {
 
       const list = response.products ?? [];
       setProducts(list);
+      setSelectedProductIds((current) =>
+        current.filter((id) => list.some((product) => product.id === id)),
+      );
 
       const summary = { ...emptyStats, total: list.length };
       list.forEach((product) => {
@@ -535,9 +551,21 @@ export default function ProductsPage() {
     Math.ceil(filteredProducts.length / PAGE_SIZE),
   );
 
+  const allPagedSelected =
+    pagedProducts.length > 0 &&
+    pagedProducts.every((product) => selectedProductIds.includes(product.id));
+
   useEffect(() => {
     setPage(1);
   }, [categoryFilter, statusFilter]);
+
+  useEffect(() => {
+    setSelectedProductIds((current) =>
+      current.filter((id) =>
+        filteredProducts.some((product) => product.id === id),
+      ),
+    );
+  }, [filteredProducts]);
 
   useEffect(() => {
     const missing = pagedProducts.filter(
@@ -829,6 +857,70 @@ export default function ProductsPage() {
     }
   };
 
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProductIds((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId],
+    );
+  };
+
+  const toggleSelectAllPaged = () => {
+    if (allPagedSelected) {
+      setSelectedProductIds((current) =>
+        current.filter(
+          (id) => !pagedProducts.some((product) => product.id === id),
+        ),
+      );
+      return;
+    }
+
+    setSelectedProductIds((current) => {
+      const next = new Set(current);
+      pagedProducts.forEach((product) => next.add(product.id));
+      return Array.from(next);
+    });
+  };
+
+  const submitBulkDelete = async () => {
+    if (selectedProductIds.length === 0) {
+      setError("Please select at least one product to delete.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const result = await apiJson<ProductBulkDeleteResult>(
+        "/products/bulk-delete",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            productIds: selectedProductIds,
+          }),
+        },
+        "/products",
+      );
+
+      setSelectedProductIds([]);
+      setBulkDeleteOpen(false);
+      await fetchProducts();
+
+      if (result.failureCount > 0) {
+        setError(
+          `${result.deletedCount} products deleted, ${result.failureCount} failed.`,
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete products.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const selectedStatus = useMemo(() => {
     if (!selectedProduct) return "OUT_STOCK" as const;
     return normalizeStockStatus(selectedProduct.stockQuantity);
@@ -1102,23 +1194,11 @@ export default function ProductsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setError(null);
-                  setImportResult(null);
-                  setImportFile(null);
-                  setImportContinueOnError(true);
-                  setImportOpen(true);
-                }}
-                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={() => setBulkDeleteOpen(true)}
+                disabled={selectedProductIds.length === 0}
+                className="h-11 rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Import file
-              </button>
-              <button
-                type="button"
-                onClick={openAddModal}
-                className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
-              >
-                Add product
+                Delete selected
               </button>
             </div>
           </div>
@@ -1154,18 +1234,59 @@ export default function ProductsPage() {
               )}
             </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-            >
-              <option value="ALL">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+              >
+                <option value="ALL">All categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setImportResult(null);
+                  setImportFile(null);
+                  setImportContinueOnError(true);
+                  setImportOpen(true);
+                }}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Import file
+              </button>
+
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+              >
+                Add product
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p>
+              {selectedProductIds.length > 0
+                ? `${selectedProductIds.length} products selected for bulk actions.`
+                : "Select one or more products to use bulk delete."}
+            </p>
+            {selectedProductIds.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setSelectedProductIds([])}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Clear selection
+              </button>
+            ) : null}
           </div>
         </article>
 
@@ -1173,6 +1294,15 @@ export default function ProductsPage() {
           <table className="w-full table-fixed divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
+                <th className="w-[5%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  <input
+                    type="checkbox"
+                    checked={allPagedSelected}
+                    onChange={toggleSelectAllPaged}
+                    aria-label="Select all products on this page"
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                  />
+                </th>
                 <th className="w-[24%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Product
                 </th>
@@ -1227,6 +1357,15 @@ export default function ProductsPage() {
 
                   return (
                     <tr key={product.id} className="align-top">
+                      <td className="px-5 py-5">
+                        <input
+                          type="checkbox"
+                          checked={selectedProductIds.includes(product.id)}
+                          onChange={() => toggleProductSelection(product.id)}
+                          aria-label={`Select product ${product.name}`}
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                        />
+                      </td>
                       <td className="px-5 py-5">
                         <div className="flex items-start gap-4">
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
@@ -2312,6 +2451,48 @@ export default function ProductsPage() {
                 className="h-11 rounded-2xl bg-rose-600 px-5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {bulkDeleteOpen ? (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.22)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
+              Bulk deletion
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              Delete selected products?
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              This will soft delete{" "}
+              <span className="font-semibold text-slate-900">
+                {selectedProductIds.length}
+              </span>{" "}
+              selected products from the catalog. Existing references in orders
+              and reports remain available.
+            </p>
+            <div className="mt-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+              Review the selected list before confirming. This action hides the
+              products from active management screens.
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setBulkDeleteOpen(false)}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitBulkDelete}
+                disabled={saving}
+                className="h-11 rounded-2xl bg-rose-600 px-5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Deleting..." : "Delete selected"}
               </button>
             </div>
           </div>
