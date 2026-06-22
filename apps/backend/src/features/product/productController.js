@@ -327,6 +327,23 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const bulkDeleteProducts = async (req, res) => {
+  try {
+    const { productIds } = req.body;
+    const userId = req.user.userId;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return errorResponse(res, 400, "productIds must be a non-empty array");
+    }
+
+    const result = await productService.bulkDeleteProducts(productIds, userId);
+    successResponse(res, 200, result, "Products deleted successfully");
+  } catch (error) {
+    console.error("Bulk delete products error:", error);
+    errorResponse(res, 400, error.message || "Failed to delete products");
+  }
+};
+
 const updateProductStock = async (req, res) => {
   try {
     const { id } = req.params;
@@ -364,5 +381,6 @@ module.exports = {
   importProducts,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
   updateProductStock,
 };

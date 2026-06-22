@@ -788,6 +788,77 @@ const deleteProduct = async (productId, userId) => {
   return true;
 };
 
+const bulkDeleteProducts = async (productIds, userId) => {
+  const { data: admin } = await supabase
+    .from("Admin")
+    .select("id")
+    .eq("userId", userId)
+    .single();
+
+  if (!admin) {
+    throw { status: 403, message: "Only admins can delete products" };
+  }
+
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    throw { status: 400, message: "productIds must be a non-empty array" };
+  }
+
+  const normalizedIds = [...new Set(productIds.filter((id) => typeof id === "string" && id.trim()))];
+
+  if (normalizedIds.length === 0) {
+    throw { status: 400, message: "No valid product IDs were provided" };
+  }
+
+  const { data: existingProducts, error: fetchError } = await supabase
+    .from("Product")
+    .select("id")
+    .in("id", normalizedIds)
+    .eq("is_deleted", false);
+
+  if (fetchError) throw fetchError;
+
+  const existingIds = new Set((existingProducts || []).map((product) => product.id));
+  const deletableIds = normalizedIds.filter((id) => existingIds.has(id));
+  const now = new Date().toISOString();
+
+  if (deletableIds.length > 0) {
+    const { error: updateError } = await supabase
+      .from("Product")
+      .update({
+        is_deleted: true,
+        updatedAt: now,
+      })
+      .in("id", deletableIds);
+
+    if (updateError) throw updateError;
+  }
+
+  const results = normalizedIds.map((id) => {
+    if (existingIds.has(id)) {
+      return {
+        id,
+        success: true,
+      };
+    }
+
+    return {
+      id,
+      success: false,
+      error: "Product not found or already deleted",
+    };
+  });
+
+  const deletedCount = results.filter((item) => item.success).length;
+  const failureCount = results.length - deletedCount;
+
+  return {
+    total: normalizedIds.length,
+    deletedCount,
+    failureCount,
+    results,
+  };
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -795,6 +866,7 @@ module.exports = {
   importProducts,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
   updateProductStock,
   syncVariantMetadata,
 };

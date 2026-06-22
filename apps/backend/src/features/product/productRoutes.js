@@ -64,6 +64,7 @@ router.put(
 router.use(authenticate, checkRole("ADMIN"));
 
 router.post("/", upload.any(), productController.createProduct); // POST /api/products
+router.post("/bulk-delete", productController.bulkDeleteProducts); // POST /api/products/bulk-delete
 router.delete("/:id", productController.deleteProduct); // DELETE /api/products/:id
 
 module.exports = router;
