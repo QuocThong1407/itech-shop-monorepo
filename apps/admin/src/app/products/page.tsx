@@ -114,6 +114,33 @@ type ProductDetail = ProductRecord & {
   ProductVariant?: ProductVariantRecord[];
 };
 
+type ProductImportResultRow = {
+  index: number;
+  success: boolean;
+  productId?: string;
+  name?: string | null;
+  error?: string;
+};
+
+type ProductImportResult = {
+  total: number;
+  processed: number;
+  successCount: number;
+  failureCount: number;
+  results: ProductImportResultRow[];
+};
+
+type ProductBulkDeleteResult = {
+  total: number;
+  deletedCount: number;
+  failureCount: number;
+  results: Array<{
+    id: string;
+    success: boolean;
+    error?: string;
+  }>;
+};
+
 type ModalMode = "view" | "edit" | "add" | null;
 
 type DraftState = {
@@ -131,6 +158,8 @@ type DraftState = {
 };
 
 const PAGE_SIZE = 8;
+const ADMIN_BASE_PATH = "/admin";
+const IMPORT_TEMPLATE_BASE = `${ADMIN_BASE_PATH}/templates`;
 
 const emptyStats: ProductStats = {
   total: 0,
@@ -389,6 +418,7 @@ function getPreviewUrl(file: File) {
 export default function ProductsPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [sellers, setSellers] = useState<UserOption[]>([]);
@@ -408,6 +438,14 @@ export default function ProductsPage() {
   const [draft, setDraft] = useState<DraftState>(initialDraft());
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ProductRecord | null>(
+    null,
+  );
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importContinueOnError, setImportContinueOnError] = useState(true);
+  const [importResult, setImportResult] = useState<ProductImportResult | null>(
     null,
   );
 
@@ -448,6 +486,9 @@ export default function ProductsPage() {
 
       const list = response.products ?? [];
       setProducts(list);
+      setSelectedProductIds((current) =>
+        current.filter((id) => list.some((product) => product.id === id)),
+      );
 
       const summary = { ...emptyStats, total: list.length };
       list.forEach((product) => {
@@ -510,9 +551,21 @@ export default function ProductsPage() {
     Math.ceil(filteredProducts.length / PAGE_SIZE),
   );
 
+  const allPagedSelected =
+    pagedProducts.length > 0 &&
+    pagedProducts.every((product) => selectedProductIds.includes(product.id));
+
   useEffect(() => {
     setPage(1);
   }, [categoryFilter, statusFilter]);
+
+  useEffect(() => {
+    setSelectedProductIds((current) =>
+      current.filter((id) =>
+        filteredProducts.some((product) => product.id === id),
+      ),
+    );
+  }, [filteredProducts]);
 
   useEffect(() => {
     const missing = pagedProducts.filter(
@@ -588,6 +641,45 @@ export default function ProductsPage() {
     setSelectedProduct(null);
     setEditingId(null);
     setDraft(initialDraft());
+  };
+
+  const closeImportModal = () => {
+    setImportOpen(false);
+    setImportFile(null);
+    setImportContinueOnError(true);
+    setImportResult(null);
+  };
+
+  const submitImport = async () => {
+    if (!importFile) {
+      setError("Please choose a CSV or XLSX file to import.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", importFile);
+    formData.append("continueOnError", String(importContinueOnError));
+
+    setImporting(true);
+    setError(null);
+
+    try {
+      const result = await apiJson<ProductImportResult>(
+        "/products/import",
+        {
+          method: "POST",
+          body: formData,
+        },
+        "/products",
+      );
+
+      setImportResult(result);
+      await fetchProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to import file.");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const submitProduct = async () => {
@@ -759,6 +851,70 @@ export default function ProductsPage() {
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to delete product.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProductIds((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId],
+    );
+  };
+
+  const toggleSelectAllPaged = () => {
+    if (allPagedSelected) {
+      setSelectedProductIds((current) =>
+        current.filter(
+          (id) => !pagedProducts.some((product) => product.id === id),
+        ),
+      );
+      return;
+    }
+
+    setSelectedProductIds((current) => {
+      const next = new Set(current);
+      pagedProducts.forEach((product) => next.add(product.id));
+      return Array.from(next);
+    });
+  };
+
+  const submitBulkDelete = async () => {
+    if (selectedProductIds.length === 0) {
+      setError("Please select at least one product to delete.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const result = await apiJson<ProductBulkDeleteResult>(
+        "/products/bulk-delete",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            productIds: selectedProductIds,
+          }),
+        },
+        "/products",
+      );
+
+      setSelectedProductIds([]);
+      setBulkDeleteOpen(false);
+      await fetchProducts();
+
+      if (result.failureCount > 0) {
+        setError(
+          `${result.deletedCount} products deleted, ${result.failureCount} failed.`,
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete products.",
       );
     } finally {
       setSaving(false);
@@ -1038,10 +1194,11 @@ export default function ProductsPage() {
               </button>
               <button
                 type="button"
-                onClick={openAddModal}
-                className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+                onClick={() => setBulkDeleteOpen(true)}
+                disabled={selectedProductIds.length === 0}
+                className="h-11 rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Add product
+                Delete selected
               </button>
             </div>
           </div>
@@ -1077,18 +1234,59 @@ export default function ProductsPage() {
               )}
             </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-            >
-              <option value="ALL">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+              >
+                <option value="ALL">All categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setImportResult(null);
+                  setImportFile(null);
+                  setImportContinueOnError(true);
+                  setImportOpen(true);
+                }}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Import file
+              </button>
+
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+              >
+                Add product
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p>
+              {selectedProductIds.length > 0
+                ? `${selectedProductIds.length} products selected for bulk actions.`
+                : "Select one or more products to use bulk delete."}
+            </p>
+            {selectedProductIds.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setSelectedProductIds([])}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Clear selection
+              </button>
+            ) : null}
           </div>
         </article>
 
@@ -1096,6 +1294,15 @@ export default function ProductsPage() {
           <table className="w-full table-fixed divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
+                <th className="w-[5%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  <input
+                    type="checkbox"
+                    checked={allPagedSelected}
+                    onChange={toggleSelectAllPaged}
+                    aria-label="Select all products on this page"
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                  />
+                </th>
                 <th className="w-[24%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Product
                 </th>
@@ -1150,6 +1357,15 @@ export default function ProductsPage() {
 
                   return (
                     <tr key={product.id} className="align-top">
+                      <td className="px-5 py-5">
+                        <input
+                          type="checkbox"
+                          checked={selectedProductIds.includes(product.id)}
+                          onChange={() => toggleProductSelection(product.id)}
+                          aria-label={`Select product ${product.name}`}
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                        />
+                      </td>
                       <td className="px-5 py-5">
                         <div className="flex items-start gap-4">
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
@@ -1977,6 +2193,236 @@ export default function ProductsPage() {
         ) : null}
       </ModalShell>
 
+      <ModalShell
+        open={importOpen}
+        title="Import products"
+        subtitle="Upload a CSV or Excel file to create products in bulk for admin or seller catalogs."
+        onClose={closeImportModal}
+        widthClass="max-w-4xl"
+      >
+        <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="space-y-5 p-6 lg:border-r lg:border-slate-200">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">
+                Template files
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Use the provided headers exactly. For products with variants,
+                keep the <code>variants</code> column as a JSON array string.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <a
+                  href={`${IMPORT_TEMPLATE_BASE}/product-import-template.csv`}
+                  download
+                  className="inline-flex h-11 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Download CSV
+                </a>
+                <a
+                  href={`${IMPORT_TEMPLATE_BASE}/product-import-template.xlsx`}
+                  download
+                  className="inline-flex h-11 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Download XLSX
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700">
+                  Import file
+                </span>
+                <label className="mt-3 flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:bg-slate-100">
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setImportFile(file);
+                      setImportResult(null);
+                    }}
+                  />
+                  <span className="text-base font-semibold text-slate-900">
+                    {importFile ? importFile.name : "Choose CSV or XLSX file"}
+                  </span>
+                  <span className="mt-2 text-sm leading-6 text-slate-500">
+                    Maximum 10MB. The backend will parse the first worksheet for
+                    Excel files.
+                  </span>
+                </label>
+              </label>
+
+              <label className="mt-4 flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={importContinueOnError}
+                  onChange={(event) =>
+                    setImportContinueOnError(event.target.checked)
+                  }
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                />
+                <span className="text-sm leading-6 text-slate-600">
+                  Continue importing valid rows even if some rows fail.
+                </span>
+              </label>
+
+              <div className="mt-5 rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                Required columns: <code>name</code>, <code>price</code>,{" "}
+                <code>categoryId</code>. Use either <code>stockQuantity</code>{" "}
+                for simple products or <code>variants</code> for variable
+                products. <code>sellerUserId</code> is required when admin
+                imports for a seller.
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeImportModal}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitImport}
+                disabled={importing}
+                className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {importing ? "Importing..." : "Start import"}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-5 bg-slate-50 p-6">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">
+                Sample row format
+              </p>
+              <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.18em] text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3">Field</th>
+                        <th className="px-4 py-3">Example</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white text-slate-600">
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          name
+                        </td>
+                        <td className="px-4 py-3">Classic Sneakers</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          description
+                        </td>
+                        <td className="px-4 py-3">
+                          {`<p>Lightweight sneakers for daily wear</p>`}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          variants
+                        </td>
+                        <td className="px-4 py-3 text-xs leading-6">
+                          {`[{"variantAttributes":{"size":"M","color":"Black"},"quantity":10,"priceAdjustment":0}]`}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">
+                Import result
+              </p>
+              {importResult ? (
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Total rows
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-slate-950">
+                        {importResult.total}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                        Success
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-emerald-900">
+                        {importResult.successCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                        Failed
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-rose-900">
+                        {importResult.failureCount}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="max-h-[320px] overflow-y-auto rounded-[1.5rem] border border-slate-200">
+                    <table className="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.18em] text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3">Row</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Name</th>
+                          <th className="px-4 py-3">Message</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 bg-white">
+                        {importResult.results.map((row) => (
+                          <tr key={`${row.index}-${row.name ?? "row"}`}>
+                            <td className="px-4 py-3 text-slate-600">
+                              {row.index}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                  row.success
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-rose-100 text-rose-700"
+                                }`}
+                              >
+                                {row.success ? "Imported" : "Failed"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-medium text-slate-900">
+                              {row.name || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {row.success
+                                ? row.productId || "Created successfully"
+                                : row.error || "Unknown error"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                  Import summary will appear here after you upload a file.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </ModalShell>
+
       {confirmDelete ? (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.22)]">
@@ -2005,6 +2451,48 @@ export default function ProductsPage() {
                 className="h-11 rounded-2xl bg-rose-600 px-5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {bulkDeleteOpen ? (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.22)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
+              Bulk deletion
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              Delete selected products?
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              This will soft delete{" "}
+              <span className="font-semibold text-slate-900">
+                {selectedProductIds.length}
+              </span>{" "}
+              selected products from the catalog. Existing references in orders
+              and reports remain available.
+            </p>
+            <div className="mt-4 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+              Review the selected list before confirming. This action hides the
+              products from active management screens.
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setBulkDeleteOpen(false)}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitBulkDelete}
+                disabled={saving}
+                className="h-11 rounded-2xl bg-rose-600 px-5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Deleting..." : "Delete selected"}
               </button>
             </div>
           </div>

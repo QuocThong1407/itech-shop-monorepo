@@ -1,9 +1,88 @@
 // backend/src/features/product/productController.js
 const productService = require("./productService");
+const ExcelJS = require("exceljs");
+const { Readable } = require("stream");
 const {
   successResponse,
   errorResponse,
 } = require("../../utils/responseHelpers");
+
+const normalizeCellValue = (value) => {
+  if (value == null) return "";
+  if (typeof value === "object") {
+    if (value.text) return String(value.text).trim();
+    if (value.result != null) return String(value.result).trim();
+  }
+  return String(value).trim();
+};
+
+const worksheetToObjects = (worksheet) => {
+  const rows = worksheet.getSheetValues().slice(1);
+  const headerRow = rows.find(
+    (row) =>
+      Array.isArray(row) &&
+      row.some((cell) => normalizeCellValue(cell).length > 0),
+  );
+
+  if (!headerRow || !Array.isArray(headerRow)) {
+    return [];
+  }
+
+  const headers = headerRow
+    .slice(1)
+    .map((cell) => normalizeCellValue(cell).replace(/\s+/g, ""));
+
+  const dataRows = rows.slice(rows.indexOf(headerRow) + 1);
+
+  return dataRows
+    .filter(
+      (row) =>
+        Array.isArray(row) &&
+        row.some((cell) => normalizeCellValue(cell).length > 0),
+    )
+    .map((row) => {
+      const values = row.slice(1);
+      return headers.reduce((result, header, index) => {
+        if (!header) return result;
+        result[header] = normalizeCellValue(values[index]);
+        return result;
+      }, {});
+    });
+};
+
+const parseImportFile = async (file) => {
+  const workbook = new ExcelJS.Workbook();
+  const fileName = (file.originalname || "").toLowerCase();
+
+  if (fileName.endsWith(".csv")) {
+    const stream = Readable.from(file.buffer.toString("utf8"));
+    const worksheet = await workbook.csv.read(stream);
+    return worksheetToObjects(worksheet);
+  }
+
+  await workbook.xlsx.load(file.buffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) return [];
+  return worksheetToObjects(worksheet);
+};
+
+const castImportedProduct = (item) => {
+  const product = {
+    name: item.name,
+    description: item.description,
+    price: item.price === "" ? undefined : Number(item.price),
+    stockQuantity:
+      item.stockQuantity === "" ? undefined : Number(item.stockQuantity),
+    categoryId: item.categoryId,
+    sellerUserId: item.sellerUserId || undefined,
+  };
+
+  if (item.variants) {
+    product.variants = item.variants;
+  }
+
+  return product;
+};
 
 const getAllProducts = async (req, res) => {
   try {
@@ -151,6 +230,43 @@ const createProduct = async (req, res) => {
   }
 };
 
+const importProducts = async (req, res) => {
+  try {
+    let products;
+
+    if (req.file) {
+      const parsedRows = await parseImportFile(req.file);
+      products = parsedRows.map(castImportedProduct);
+    } else {
+      products = req.body?.products ?? req.body;
+
+      if (typeof products === "string") {
+        try {
+          products = JSON.parse(products);
+        } catch {
+          return errorResponse(res, 400, "Invalid products payload");
+        }
+      }
+    }
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return errorResponse(res, 400, "No product rows found to import");
+    }
+
+    const continueOnError =
+      String(req.body?.continueOnError ?? "true").toLowerCase() !== "false";
+
+    const result = await productService.importProducts(products, req.user, {
+      continueOnError,
+    });
+
+    successResponse(res, 201, result, "Products imported");
+  } catch (error) {
+    console.error("Import products error:", error);
+    errorResponse(res, 400, error.message || "Failed to import products");
+  }
+};
+
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -211,6 +327,23 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const bulkDeleteProducts = async (req, res) => {
+  try {
+    const { productIds } = req.body;
+    const userId = req.user.userId;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return errorResponse(res, 400, "productIds must be a non-empty array");
+    }
+
+    const result = await productService.bulkDeleteProducts(productIds, userId);
+    successResponse(res, 200, result, "Products deleted successfully");
+  } catch (error) {
+    console.error("Bulk delete products error:", error);
+    errorResponse(res, 400, error.message || "Failed to delete products");
+  }
+};
+
 const updateProductStock = async (req, res) => {
   try {
     const { id } = req.params;
@@ -245,7 +378,9 @@ module.exports = {
   getAllProducts,
   getProductById,
   createProduct,
+  importProducts,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
   updateProductStock,
 };
