@@ -12,23 +12,52 @@ const roleOrigins = {
   customer: customerAppUrl,
 } as const;
 
+// Routes không cần đăng nhập
+const PUBLIC_PREFIXES = [
+  "/customer/products",
+  "/customer/search",
+];
+
+const PUBLIC_EXACT = ["/customer", "/customer/"];
+
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get(AUTH_COOKIE_NAMES.accessToken)?.value;
-  const role = normalizeAuthRole(request.cookies.get(AUTH_COOKIE_NAMES.authRole)?.value);
   const { pathname } = request.nextUrl;
 
+  // Public routes → cho qua luôn
+  if (
+    PUBLIC_EXACT.includes(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  ) {
+    return NextResponse.next();
+  }
+
+  const token = request.cookies.get(AUTH_COOKIE_NAMES.accessToken)?.value;
+  const role = normalizeAuthRole(
+    request.cookies.get(AUTH_COOKIE_NAMES.authRole)?.value
+  );
+
+  // Chưa đăng nhập → về login của host
   if (!token || !role) {
-    const loginUrl = new URL(`/login?next=${encodeURIComponent(pathname)}`, hostLoginUrl);
+    const loginUrl = new URL(
+      `/login?next=${encodeURIComponent(pathname)}`,
+      hostLoginUrl
+    );
     return NextResponse.redirect(loginUrl);
   }
 
-  if (role !== "customer") {
-    return NextResponse.redirect(new URL(APP_BASE_PATHS[role], roleOrigins[role]));
+  // Đúng role → cho qua
+  if (role === "customer") {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // Sai role → redirect về app tương ứng
+  return NextResponse.redirect(
+    new URL(APP_BASE_PATHS[role], roleOrigins[role])
+  );
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+  ],
 };

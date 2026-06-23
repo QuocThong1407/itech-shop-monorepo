@@ -1,11 +1,10 @@
-export const APP_ROLES = ["admin", "seller", "customer"] as const;
-
+export const APP_ROLES = ["ADMIN", "SELLER", "CUSTOMER"] as const;
 export type AppRole = (typeof APP_ROLES)[number];
 
 export type AuthUser = {
   id: string;
   email: string;
-  fullName: string;
+  username: string;
   role: AppRole;
   avatarUrl?: string | null;
 };
@@ -23,9 +22,9 @@ export const AUTH_COOKIE_NAMES = {
 } as const;
 
 export const APP_BASE_PATHS: Record<AppRole, string> = {
-  admin: "/admin",
-  seller: "/seller",
-  customer: "/customer",
+  ADMIN: "/admin",
+  SELLER: "/seller",
+  CUSTOMER: "/customer",
 };
 
 export function isAppRole(value: string): value is AppRole {
@@ -55,19 +54,14 @@ export function getAppHomePath(role: AppRole) {
 
 export function getRoleFromPath(pathname: string): AppRole | null {
   const normalized = pathname.toLowerCase();
-
-  if (normalized.startsWith("/admin")) return "admin";
-  if (normalized.startsWith("/seller")) return "seller";
-  if (normalized.startsWith("/customer")) return "customer";
-
+  if (normalized.startsWith("/admin")) return "ADMIN";
+  if (normalized.startsWith("/seller")) return "SELLER";
+  if (normalized.startsWith("/customer")) return "CUSTOMER";
   return null;
 }
 
 export function normalizeAuthRole(role: string | null | undefined): AppRole | null {
-  if (!role) {
-    return null;
-  }
-
-  const normalized = role.toLowerCase();
-  return isAppRole(normalized) ? normalized : null;
+  if (!role) return null;
+  const upper = role.toUpperCase();
+  return isAppRole(upper) ? upper : null;
 }

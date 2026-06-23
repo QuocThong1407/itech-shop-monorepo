@@ -1,16 +1,15 @@
+// apps/customer/src/app/layout.tsx
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Geist, Geist_Mono } from "next/font/google";
-import type { ReactNode } from "react";
-import "./globals.css";
 import { AUTH_COOKIE_NAMES, normalizeAuthRole } from "@itech/shared/auth";
+import { CustomerShell } from "@/components/customer-shell";
+import { getCart, getProfile, getCategories } from "@/lib/api";
+import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -21,29 +20,55 @@ export const metadata: Metadata = {
   description: "Customer storefront",
 };
 
+const HOST_APP_URL = process.env.HOST_APP_URL ?? "http://localhost:3000";
+
 export default async function CustomerLayout({
   children,
-}: Readonly<{
+}: {
   children: ReactNode;
-}>) {
+}) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAMES.accessToken)?.value;
-  const role = normalizeAuthRole(cookieStore.get(AUTH_COOKIE_NAMES.authRole)?.value);
-
-  if (!token || role !== "customer") {
-    redirect(
-      `${process.env.HOST_APP_URL ?? "http://localhost:3000"}/login?next=${encodeURIComponent(
-        "/customer",
-      )}`,
-    );
+  const role = normalizeAuthRole(
+    cookieStore.get(AUTH_COOKIE_NAMES.authRole)?.value,
+  );
+  if (!token || role !== "CUSTOMER") {
+    redirect(`${HOST_APP_URL}/login?next=${encodeURIComponent("/customer")}`);
   }
+
+  // token đã có, fetch song song — lỗi không làm vỡ layout
+  const [cart, profile, cats] = await Promise.allSettled([
+    getCart(),
+    getProfile(),
+    getCategories(),
+  ]);
+
+  const categories = cats.status === "fulfilled" ? cats.value : [];
+
+  const cartCount =
+    cart.status === "fulfilled" && cart.value
+      ? cart.value.items.reduce((sum, item) => sum + item.quantity, 0)
+      : 0;
+
+  const userName =
+    profile.status === "fulfilled" && profile.value
+      ? profile.value.username
+      : undefined;
 
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-white text-zinc-900">{children}</body>
+      <body className="min-h-full text-zinc-900">
+        <CustomerShell
+          cartCount={cartCount}
+          userName={userName}
+          categories={categories}
+        >
+          {children}
+        </CustomerShell>
+      </body>
     </html>
   );
 }
