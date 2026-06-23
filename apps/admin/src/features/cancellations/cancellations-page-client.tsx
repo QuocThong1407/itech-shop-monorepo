@@ -1,8 +1,8 @@
 "use client";
 
-import ReturnsListSection from "./components/returns-list-section";
-import ReturnDetailModal from "./components/return-detail-modal";
-import { useReturnsPage } from "./hooks/use-returns-page";
+import CancellationDetailModal from "./components/cancellation-detail-modal";
+import CancellationsListSection from "./components/cancellations-list-section";
+import { useCancellationsPage } from "./hooks/use-cancellations-page";
 
 function StatCard({
   label,
@@ -23,22 +23,23 @@ function StatCard({
   );
 }
 
-export default function ReturnsPageClient() {
-  const { state, actions } = useReturnsPage();
+export default function CancellationsPageClient() {
+  const { state, actions } = useCancellationsPage();
 
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
         <div className="space-y-3">
           <div className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#008ECC]">
-            Admin returns
+            Admin cancellations
           </div>
           <div>
             <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Return Request Queue
+              Cancellation Request Queue
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Inspect, approve, complete, or reject customer returns across the entire marketplace.
+              Review cancellation requests, coordinate stock restoration, and close the workflow
+              with a clear audit trail.
             </p>
           </div>
         </div>
@@ -74,7 +75,7 @@ export default function ReturnsPageClient() {
         />
       </section>
 
-      <ReturnsListSection
+      <CancellationsListSection
         loading={state.loading}
         actionLoading={state.actionLoading}
         activeTab={state.activeTab}
@@ -85,14 +86,14 @@ export default function ReturnsPageClient() {
         totalPages={state.totalPages}
         onTabChange={(tab) => actions.setActiveTab(tab)}
         onSearchChange={(value) => actions.setSearchText(value)}
-        onRefresh={() => void actions.loadReturns()}
+        onRefresh={() => void actions.loadCancellations()}
         onView={(record) => void actions.handleView(record)}
         onStatusChange={(record, nextStatus) => void actions.updateStatus(record, nextStatus)}
         onPrevPage={() => actions.setPage((current) => Math.max(1, current - 1))}
         onNextPage={() => actions.setPage((current) => Math.min(state.totalPages, current + 1))}
       />
 
-      <ReturnDetailModal
+      <CancellationDetailModal
         open={state.detailOpen && Boolean(state.selectedRecord)}
         actionLoading={state.actionLoading}
         selectedRecord={state.selectedRecord}

@@ -1,22 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { formatReportDate } from "../../../lib/report-format";
-
-type RowBase = {
-  userId: string;
-  username: string;
-  email: string;
-  lastActive: string;
-};
+import { formatReportDate } from "../../../../lib/report-format";
+import type { ActivityRowBase } from "../types";
 
 type ActivityTabsProps = {
-  customers: Array<RowBase & { totalOrders?: number }>;
-  sellers: Array<RowBase & { totalProducts?: number }>;
-  admins: Array<RowBase & { totalReportsGenerated?: number }>;
+  customers: Array<ActivityRowBase & { totalOrders?: number }>;
+  sellers: Array<ActivityRowBase & { totalProducts?: number }>;
+  admins: Array<ActivityRowBase & { totalReportsGenerated?: number }>;
 };
 
-function ActivityTable<T extends RowBase>({
+function ActivityTable<T extends ActivityRowBase>({
   title,
   rows,
   extraLabel,
@@ -32,9 +26,9 @@ function ActivityTable<T extends RowBase>({
       <div className="border-b border-slate-200 px-5 py-4">
         <p className="text-sm font-semibold text-slate-900">{title}</p>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[24rem]">
         <table className="w-full min-w-[560px] table-fixed divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+          <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_rgba(226,232,240,1)]">
             <tr>
               <th className="w-[34%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                 Username
@@ -77,11 +71,7 @@ function ActivityTable<T extends RowBase>({
   );
 }
 
-export default function ActivityTabs({
-  customers,
-  sellers,
-  admins,
-}: ActivityTabsProps) {
+export default function ActivityTabs({ customers, sellers, admins }: ActivityTabsProps) {
   const [tab, setTab] = useState<"customers" | "sellers" | "admins">("customers");
 
   return (
