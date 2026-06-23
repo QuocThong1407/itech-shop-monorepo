@@ -223,7 +223,7 @@ export type SurfaceCardProps = React.PropsWithChildren<{
 export function SurfaceCard({ className = "", children }: SurfaceCardProps) {
   return (
     <article
-      className={`rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
+      className={`rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
     >
       {children}
     </article>

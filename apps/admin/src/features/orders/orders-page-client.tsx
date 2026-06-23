@@ -1,85 +1,68 @@
 "use client";
 
+import { AlertBanner, MetricsGrid, PageIntro, StatCard } from "@itech/shared";
 import OrdersListSection from "./components/orders-list-section";
 import OrderDetailModal from "./components/order-detail-modal";
 import { useOrdersPage } from "./hooks/use-orders-page";
-
-function StatCard({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: number;
-  className: string;
-}) {
-  return (
-    <article
-      className={`rounded-[1.75rem] border p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
-    >
-      <p className="text-xs uppercase tracking-[0.2em] opacity-70">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
-    </article>
-  );
-}
 
 export default function OrdersPageClient() {
   const { state, actions } = useOrdersPage();
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <div className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#008ECC]">
-              Admin orders
-            </div>
-            <div>
-              <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Orders Control Center
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Monitor every order across the marketplace, inspect payment state, and coordinate
-                fulfillment decisions from one place.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Admin orders"
+        title="Orders Control Center"
+        description="Monitor every order across the marketplace, inspect payment state, and coordinate fulfillment decisions from one place."
+        className="bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
+        titleClassName="sm:text-4xl"
+      />
 
       {state.error ? (
-        <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {state.error}
-        </div>
+        <AlertBanner tone="danger" message={state.error} className="rounded-[1.5rem]" />
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <MetricsGrid className="xl:grid-cols-5">
         <StatCard
-          label="Total"
+          title="Total"
           value={state.stats.total}
           className="border-slate-200 bg-white text-slate-900"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-slate-500"
+          accentClassName="bg-slate-400"
         />
         <StatCard
-          label="Pending"
+          title="Pending"
           value={state.stats.pending}
           className="border-amber-100 bg-amber-50 text-amber-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-amber-700/80"
+          valueClassName="!text-amber-700"
+          accentClassName="bg-amber-500"
         />
         <StatCard
-          label="Shipped"
+          title="Shipped"
           value={state.stats.shipped}
           className="border-indigo-100 bg-indigo-50 text-indigo-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-indigo-700/80"
+          valueClassName="!text-indigo-700"
+          accentClassName="bg-indigo-500"
         />
         <StatCard
-          label="Delivered"
+          title="Delivered"
           value={state.stats.delivered}
           className="border-emerald-100 bg-emerald-50 text-emerald-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-emerald-700/80"
+          valueClassName="!text-emerald-700"
+          accentClassName="bg-emerald-500"
         />
         <StatCard
-          label="Cancelled"
+          title="Cancelled"
           value={state.stats.cancelled}
           className="border-rose-100 bg-rose-50 text-rose-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-rose-700/80"
+          valueClassName="!text-rose-700"
+          accentClassName="bg-rose-500"
         />
-      </section>
+      </MetricsGrid>
 
       <OrdersListSection
         loading={state.loading}

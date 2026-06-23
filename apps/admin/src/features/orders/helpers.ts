@@ -49,17 +49,17 @@ export function getAvailableStatusOptions(status?: string) {
 export function getStatusSelectClass(status?: string) {
   switch (normalizeStatus(status)) {
     case "PENDING":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "!border-amber-200 !bg-amber-50 !text-amber-700";
     case "CONFIRMED":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "!border-sky-200 !bg-sky-50 !text-sky-700";
     case "SHIPPED":
-      return "border-indigo-200 bg-indigo-50 text-indigo-700";
+      return "!border-indigo-200 !bg-indigo-50 !text-indigo-700";
     case "DELIVERED":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "!border-emerald-200 !bg-emerald-50 !text-emerald-700";
     case "CANCELLED":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "!border-rose-200 !bg-rose-50 !text-rose-700";
     default:
-      return "border-slate-200 bg-slate-50 text-slate-700";
+      return "!border-slate-200 !bg-slate-50 !text-slate-700";
   }
 }
 

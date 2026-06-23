@@ -1,7 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { ModalShell } from "@itech/shared";
+import {
+  Button,
+  DetailSection,
+  EmptyState,
+  KeyValueGrid,
+  ModalShell,
+  StatusBadge,
+  StatusSelect,
+} from "@itech/shared";
 import {
   getAvailableStatusOptions,
   formatDateTime,
@@ -61,27 +69,24 @@ export default function OrderDetailModal({
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Status
                 </p>
-                <select
+                <StatusSelect
                   value={normalizeStatus(selectedOrder.status)}
                   disabled={actionLoading}
                   onChange={(event) => onStatusChange(selectedOrder, event.target.value)}
-                  className={`mt-2 h-10 w-full rounded-2xl border px-3 text-sm font-semibold outline-none transition ${getStatusSelectClass(
+                  options={getAvailableStatusOptions(selectedOrder.status).map((item) => ({
+                    value: item,
+                    label: getStatusLabel(item),
+                  }))}
+                  className={`!mt-2 !h-10 !w-full !rounded-2xl !px-3 !py-2 !text-sm !font-semibold ${getStatusSelectClass(
                     selectedOrder.status,
                   )}`}
-                >
-                  {getAvailableStatusOptions(selectedOrder.status)
-                    .map((item) => (
-                      <option key={item} value={item}>
-                        {getStatusLabel(item)}
-                      </option>
-                    ))}
-                </select>
+                />
               </div>
               <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Total
                 </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
+                <p className="mt-2 text-xl font-semibold text-slate-950">
                   {formatMoney(payment?.amount || 0)}
                 </p>
               </div>
@@ -92,47 +97,31 @@ export default function OrderDetailModal({
                 <p className="mt-2 text-sm font-semibold text-slate-950">
                   {payment?.method || "N/A"}
                 </p>
-                <span
-                  className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getPaymentTone(
-                    payment?.status,
-                  )}`}
+                <StatusBadge
+                  className={`mt-2 ${getPaymentTone(payment?.status)}`}
                 >
                   {getPaymentLabel(payment?.status)}
-                </span>
+                </StatusBadge>
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Customer information</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Name</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {customer?.username || "Guest"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Email</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {customer?.email || "No email"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-3 sm:col-span-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                    Delivery address
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {selectedAddress || "No address"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {selectedOrder.Address?.phoneNumber || "No phone number"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <DetailSection title="Customer information" className="shadow-sm">
+              <KeyValueGrid
+                items={[
+                  { label: "Name", value: customer?.username || "Guest" },
+                  { label: "Email", value: customer?.email || "No email" },
+                  {
+                    label: "Delivery address",
+                    value: selectedAddress || "No address",
+                  },
+                  { label: "Phone Number", value: selectedOrder.Address?.phoneNumber || "No phone number" },
+                ]}
+                itemClassName="sm:col-span-1"
+                columnsClassName="grid gap-4 sm:grid-cols-2"
+              />
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Timeline</p>
+            <DetailSection title="Timeline" className="shadow-sm">
               <div className="mt-4 space-y-4">
                 {[
                   {
@@ -179,17 +168,19 @@ export default function OrderDetailModal({
                   </div>
                 ))}
               </div>
-            </div>
+            </DetailSection>
           </div>
 
           <div className="space-y-5 bg-slate-50 p-6">
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold text-slate-900">Line items</p>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            <DetailSection
+              title="Line items"
+              className="shadow-sm"
+              actions={
+                <StatusBadge tone="neutral" className="bg-slate-100 text-slate-600 ring-slate-200">
                   {orderItems.length} items
-                </span>
-              </div>
+                </StatusBadge>
+              }
+            >
               <div className="mt-4 space-y-3">
                 {orderItems.length > 0 ? (
                   orderItems.map((item) => {
@@ -237,28 +228,25 @@ export default function OrderDetailModal({
                     );
                   })
                 ) : (
-                  <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                    No items found for this order.
-                  </div>
+                  <EmptyState title="No items found for this order." />
                 )}
               </div>
-            </div>
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Admin actions</p>
+            <DetailSection title="Admin actions" className="shadow-sm">
               <div className="mt-4 flex flex-wrap gap-3">
                 {normalizeStatus(selectedOrder.status) === "PENDING" ? (
-                  <button
-                    type="button"
+                  <Button
                     disabled={actionLoading}
                     onClick={() => onDelete(selectedOrder)}
-                    className="h-11 rounded-2xl border border-rose-200 bg-white px-5 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    variant="secondary"
+                    className="!border-rose-200 !bg-rose-50 !text-rose-700 !shadow-none hover:!border-rose-300 hover:!bg-rose-100"
                   >
                     Delete order
-                  </button>
+                  </Button>
                 ) : null}
               </div>
-            </div>
+            </DetailSection>
           </div>
         </div>
       ) : null}
