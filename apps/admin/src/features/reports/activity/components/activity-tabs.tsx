@@ -1,22 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { formatReportDate } from "../../../lib/report-format";
-
-type RowBase = {
-  userId: string;
-  username: string;
-  email: string;
-  lastActive: string;
-};
+import { formatReportDate } from "../../../../lib/report-format";
+import type { ActivityRowBase } from "../types";
 
 type ActivityTabsProps = {
-  customers: Array<RowBase & { totalOrders?: number }>;
-  sellers: Array<RowBase & { totalProducts?: number }>;
-  admins: Array<RowBase & { totalReportsGenerated?: number }>;
+  customers: Array<ActivityRowBase & { totalOrders?: number }>;
+  sellers: Array<ActivityRowBase & { totalProducts?: number }>;
+  admins: Array<ActivityRowBase & { totalReportsGenerated?: number }>;
 };
 
-function ActivityTable<T extends RowBase>({
+function ActivityTable<T extends ActivityRowBase>({
   title,
   rows,
   extraLabel,
@@ -77,11 +71,7 @@ function ActivityTable<T extends RowBase>({
   );
 }
 
-export default function ActivityTabs({
-  customers,
-  sellers,
-  admins,
-}: ActivityTabsProps) {
+export default function ActivityTabs({ customers, sellers, admins }: ActivityTabsProps) {
   const [tab, setTab] = useState<"customers" | "sellers" | "admins">("customers");
 
   return (
