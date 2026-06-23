@@ -1,4 +1,4 @@
-import { Badge } from "@itech/shared";
+import { EmptyState, PanelHeader, StatusBadge, SurfaceCard } from "@itech/shared";
 import type { CategoryStats } from "../types";
 
 type CategoryStatsPanelProps = {
@@ -7,9 +7,8 @@ type CategoryStatsPanelProps = {
 
 export default function CategoryStatsPanel({ categoryStats }: CategoryStatsPanelProps) {
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
-      <p className="text-sm font-semibold text-[#008ECC]">Category stats</p>
-      <h3 className="mt-1 text-xl font-semibold text-slate-950">Catalog health</h3>
+    <SurfaceCard className="flex h-full flex-col rounded-[2rem] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
+      <PanelHeader title="Catalog health" eyebrow="Category stats" />
 
       <div className="mt-6 grid gap-4">
         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5">
@@ -18,9 +17,9 @@ export default function CategoryStatsPanel({ categoryStats }: CategoryStatsPanel
             <p className="text-4xl font-semibold tracking-tight text-slate-950">
               {categoryStats.total.toLocaleString("vi-VN")}
             </p>
-            <Badge tone="neutral" className="bg-sky-50 text-[#008ECC] ring-sky-200">
+            <StatusBadge tone="neutral" className="bg-sky-50 text-[#008ECC] ring-sky-200">
               Catalog overview
-            </Badge>
+            </StatusBadge>
           </div>
         </div>
 
@@ -51,11 +50,9 @@ export default function CategoryStatsPanel({ categoryStats }: CategoryStatsPanel
             ))}
           </div>
         ) : (
-          <div className="rounded-[1.5rem] border border-dashed border-slate-200 p-4 text-sm text-slate-500">
-            No category statistics available.
-          </div>
+          <EmptyState title="No category statistics available." />
         )}
       </div>
-    </article>
+    </SurfaceCard>
   );
 }

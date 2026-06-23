@@ -1,3 +1,4 @@
+import { EmptyState, PanelHeader, StatusBadge, SurfaceCard, TableShell } from "@itech/shared";
 import { formatShortDate, formatStatus, statusClass } from "../helpers";
 import type { OrderList } from "../types";
 
@@ -9,16 +10,14 @@ export default function RecentOrdersPanel({ orderList }: RecentOrdersPanelProps)
   const recentOrders = orderList.orders.slice(0, 5);
 
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-[#008ECC]">Recent orders</p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-950">Latest activity</h3>
-        </div>
-        <span className="text-sm text-slate-500">Fetched from `/api/orders`</span>
-      </div>
+    <SurfaceCard className="flex h-full flex-col rounded-[2rem] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
+      <PanelHeader
+        title="Latest activity"
+        eyebrow="Recent orders"
+        actions={<span className="text-sm text-slate-500">Fetched from `/api/orders`</span>}
+      />
 
-      <div className="mt-6 overflow-x-auto">
+      <TableShell className="mt-6 flex-1 pb-0" innerClassName="h-full overflow-x-auto border-0">
         <table className="w-full min-w-[760px] border-separate border-spacing-y-3">
           <thead>
             <tr className="text-left text-xs uppercase tracking-[0.2em] text-slate-400">
@@ -47,13 +46,9 @@ export default function RecentOrdersPanel({ orderList }: RecentOrdersPanelProps)
                     }).format(Number(order.Payment?.[0]?.amount ?? 0))}
                   </td>
                   <td className="px-4 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ${statusClass(
-                        order.status,
-                      )}`}
-                    >
+                    <StatusBadge className={statusClass(order.status)}>
                       {formatStatus(order.status)}
-                    </span>
+                    </StatusBadge>
                   </td>
                   <td className="rounded-r-[1.25rem] px-4 py-4 text-slate-500">
                     {formatShortDate(order.orderDate || order.createdAt)}
@@ -62,14 +57,14 @@ export default function RecentOrdersPanel({ orderList }: RecentOrdersPanelProps)
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400">
-                  No order data available
+                <td colSpan={5} className="px-4 py-10">
+                  <EmptyState title="No order data available" className="border-0 bg-transparent py-0" />
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
-    </article>
+      </TableShell>
+    </SurfaceCard>
   );
 }

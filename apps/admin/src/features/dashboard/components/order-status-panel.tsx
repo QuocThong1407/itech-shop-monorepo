@@ -1,4 +1,4 @@
-import { Badge } from "@itech/shared";
+import { InfoField, KeyValueGrid, PanelHeader, StatusBadge, SurfaceCard } from "@itech/shared";
 import { buildOrderStatusRing, emptyMoney, formatStatus } from "../helpers";
 import type { OrderList, RevenueReport } from "../types";
 
@@ -13,20 +13,18 @@ export default function OrderStatusPanel({ orderList, revenueReport }: OrderStat
   );
 
   return (
-    <article className="flex flex-col h-full rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-[#008ECC]">Order status</p>
-            <h3 className="mt-1 text-xl font-semibold text-slate-950">Fulfillment balance</h3>
-          </div>
-          <Badge tone="neutral" className="bg-slate-100 text-slate-600 ring-slate-200">
+    <SurfaceCard className="flex h-full flex-col rounded-[2rem] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
+      <PanelHeader
+        title="Fulfillment balance"
+        eyebrow="Order status"
+        actions={
+          <StatusBadge tone="neutral" className="bg-slate-100 text-slate-600 ring-slate-200">
             {orderStatusTotal.toLocaleString("vi-VN")} orders loaded
-          </Badge>
-        </div>
-      </div>
+          </StatusBadge>
+        }
+      />
 
-      <div className="flex-1 flex flex-col justify-center py-4">
+      <div className="flex flex-1 flex-col justify-center py-4">
         <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="flex items-center justify-center">
             <div className="relative h-56 w-56">
@@ -78,32 +76,29 @@ export default function OrderStatusPanel({ orderList, revenueReport }: OrderStat
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Income</p>
-          <p className="mt-2 text-[18px] font-semibold text-slate-950">
-            {emptyMoney(revenueReport.summary.totalIncome)}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Refund</p>
-          <p className="mt-2 text-[18px] font-semibold text-slate-950">
-            {emptyMoney(revenueReport.summary.totalRefund)}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Net</p>
-          <p className="mt-2 text-[18px] font-semibold text-slate-950">
-            {emptyMoney(revenueReport.summary.netRevenue)}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Points</p>
-          <p className="mt-2 text-[18px] font-semibold text-slate-950">
-            {revenueReport.rows.length.toLocaleString("vi-VN")}
-          </p>
-        </div>
-      </div>
-    </article>
+      <KeyValueGrid
+        className="mt-5"
+        columnsClassName="grid grid-cols-2 gap-3 md:grid-cols-4"
+        itemClassName="ring-1 ring-slate-200"
+        items={[
+          {
+            label: "Income",
+            value: <span className="text-[18px] font-semibold text-slate-950">{emptyMoney(revenueReport.summary.totalIncome)}</span>,
+          },
+          {
+            label: "Refund",
+            value: <span className="text-[18px] font-semibold text-slate-950">{emptyMoney(revenueReport.summary.totalRefund)}</span>,
+          },
+          {
+            label: "Net",
+            value: <span className="text-[18px] font-semibold text-slate-950">{emptyMoney(revenueReport.summary.netRevenue)}</span>,
+          },
+          {
+            label: "Points",
+            value: <span className="text-[18px] font-semibold text-slate-950">{revenueReport.rows.length.toLocaleString("vi-VN")}</span>,
+          },
+        ]}
+      />
+    </SurfaceCard>
   );
 }

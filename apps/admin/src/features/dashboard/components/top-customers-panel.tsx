@@ -1,4 +1,4 @@
-import { Badge } from "@itech/shared";
+import { EmptyState, PanelHeader, StatusBadge, SurfaceCard } from "@itech/shared";
 import { currency } from "../helpers";
 import type { TopMember } from "../types";
 
@@ -8,11 +8,8 @@ type TopCustomersPanelProps = {
 
 export default function TopCustomersPanel({ topMembers }: TopCustomersPanelProps) {
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
-      <div>
-        <p className="text-sm font-semibold text-[#008ECC]">Top customers</p>
-        <h3 className="mt-1 text-xl font-semibold text-slate-950">Highest lifetime spend</h3>
-      </div>
+    <SurfaceCard className="flex h-full flex-col rounded-[2rem] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
+      <PanelHeader title="Highest lifetime spend" eyebrow="Top customers" />
 
       <div className="mt-6 space-y-4">
         {topMembers.length > 0 ? (
@@ -37,7 +34,7 @@ export default function TopCustomersPanel({ topMembers }: TopCustomersPanelProps
                     </div>
                   </div>
                 </div>
-                <Badge tone="success">{member.membership}</Badge>
+                <StatusBadge tone="success">{member.membership}</StatusBadge>
               </div>
 
               <div className="mt-4 flex items-center justify-between">
@@ -49,11 +46,9 @@ export default function TopCustomersPanel({ topMembers }: TopCustomersPanelProps
             </article>
           ))
         ) : (
-          <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
-            No membership data available.
-          </div>
+          <EmptyState title="No membership data available." className="p-6" />
         )}
       </div>
-    </article>
+    </SurfaceCard>
   );
 }
