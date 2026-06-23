@@ -26,15 +26,45 @@ export function getStatusSelectClass(status?: string) {
   switch (normalizeStatus(status)) {
     case "REQUESTED":
     case "PENDING":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "!border-amber-200 !bg-amber-50 !text-amber-700";
     case "APPROVED":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "!border-sky-200 !bg-sky-50 !text-sky-700";
     case "COMPLETED":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "!border-emerald-200 !bg-emerald-50 !text-emerald-700";
     case "REJECTED":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "!border-rose-200 !bg-rose-50 !text-rose-700";
     default:
-      return "border-slate-200 bg-slate-50 text-slate-700";
+      return "!border-slate-200 !bg-slate-50 !text-slate-700";
+  }
+}
+
+export function normalizePaymentStatus(value?: string) {
+  return (value || "UNKNOWN").toUpperCase();
+}
+
+export function getPaymentTone(status?: string) {
+  switch (normalizePaymentStatus(status)) {
+    case "SUCCESS":
+      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+    case "PENDING":
+      return "bg-amber-50 text-amber-700 ring-amber-200";
+    case "FAILED":
+      return "bg-rose-50 text-rose-700 ring-rose-200";
+    default:
+      return "bg-slate-50 text-slate-700 ring-slate-200";
+  }
+}
+
+export function getPaymentLabel(status?: string) {
+  switch (normalizePaymentStatus(status)) {
+    case "SUCCESS":
+      return "Successful";
+    case "PENDING":
+      return "Pending";
+    case "FAILED":
+      return "Failed";
+    default:
+      return "Unknown";
   }
 }
 

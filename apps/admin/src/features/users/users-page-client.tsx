@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfirmDialog, StatCard } from "@itech/shared";
+import { ConfirmDialog, MetricsGrid, PageIntro, StatCard } from "@itech/shared";
 import { roleMeta } from "./constants";
 import UserModal from "./components/user-modal";
 import UsersListSection from "./components/users-list-section";
@@ -11,30 +11,22 @@ export default function UsersPageClient() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-        <div className="px-6 py-6 xl:px-8 xl:py-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-[#008ECC] ring-1 ring-sky-200">
-              User management
-            </span>
-            <span className="text-sm text-slate-500">
-              Manage customers, sellers, and admins from one workspace
-            </span>
-          </div>
+      <PageIntro
+        eyebrow="User management"
+        title="Organize accounts, roles, and access in a cleaner admin panel."
+        description="This screen follows the spirit of the old React admin page, but presents users in a more modern structure with stronger spacing, clearer hierarchy, and faster filters."
+        className="shadow-[0_24px_80px_rgba(15,23,42,0.06)]"
+        contentClassName="space-y-4"
+        titleClassName="mt-0"
+        descriptionClassName="text-base leading-7"
+        actions={
+          <span className="text-sm text-slate-500">
+            Manage customers, sellers, and admins from one workspace
+          </span>
+        }
+      />
 
-          <div className="mt-4 max-w-3xl space-y-4">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Organize accounts, roles, and access in a cleaner admin panel.
-            </h2>
-            <p className="text-base leading-7 text-slate-600">
-              This screen follows the spirit of the old React admin page, but presents users in a
-              more modern structure with stronger spacing, clearer hierarchy, and faster filters.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <MetricsGrid className="sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total users"
           value={state.stats.total.toLocaleString("vi-VN")}
@@ -59,7 +51,7 @@ export default function UsersPageClient() {
           note="Back-office operators and supervisors"
           accentClassName="bg-rose-500"
         />
-      </section>
+      </MetricsGrid>
 
       <UsersListSection
         role={state.role}

@@ -25,18 +25,30 @@ export default function DashboardPageContent({ data }: DashboardPageContentProps
       <DashboardRevenueSection revenueReport={data.revenueReport} />
 
       <section id="analytics" className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <OrderStatusPanel orderList={data.orderList} revenueReport={data.revenueReport} />
-        <ActivitySummaryPanel activityReport={data.activityReport} usersStats={data.usersStats} />
+        <div className="min-w-0 h-full">
+          <OrderStatusPanel orderList={data.orderList} revenueReport={data.revenueReport} />
+        </div>
+        <div className="min-w-0 h-full">
+          <ActivitySummaryPanel activityReport={data.activityReport} usersStats={data.usersStats} />
+        </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <RecentOrdersPanel orderList={data.orderList} />
-        <TopCustomersPanel topMembers={data.topMembers} />
+      <section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+        <div className="min-w-0 h-full">
+          <RecentOrdersPanel orderList={data.orderList} />
+        </div>
+        <div className="min-w-0 h-full">
+          <TopCustomersPanel topMembers={data.topMembers} />
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <CategoryStatsPanel categoryStats={data.categoryStats} />
-        <EnterpriseLogPanel activityReport={data.activityReport} quickNotes={quickNotes} />
+        <div className="min-w-0 h-full">
+          <CategoryStatsPanel categoryStats={data.categoryStats} />
+        </div>
+        <div className="min-w-0 h-full">
+          <EnterpriseLogPanel activityReport={data.activityReport} quickNotes={quickNotes} />
+        </div>
       </section>
     </div>
   );
