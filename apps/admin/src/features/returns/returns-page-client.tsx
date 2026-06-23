@@ -34,7 +34,7 @@ export default function ReturnsPageClient() {
             Admin returns
           </div>
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900">
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
               Return Request Queue
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">

@@ -17,7 +17,7 @@ export default function PromotionsPageClient() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
               Campaign center
             </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
               Promotions
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 
 export type BadgeTone = "neutral" | "success" | "warning" | "danger";
 
@@ -120,10 +121,27 @@ export function ModalShell({
   widthClass = "max-w-6xl",
   eyebrow = "Workspace",
 }: ModalShellProps) {
-  if (!open) return null;
+  const [mounted, setMounted] = React.useState(false);
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/45 backdrop-blur-sm">
+  React.useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!open) return null;
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 overflow-y-auto"
+      style={{
+        zIndex: 1000,
+        isolation: "isolate",
+        backgroundColor: "rgba(2, 6, 23, 0.45)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+      }}
+    >
       <div className="flex min-h-full items-start justify-center p-4 sm:items-center">
         <div
           className={`my-4 flex h-[92vh] w-full ${widthClass} flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_100px_rgba(15,23,42,0.22)]`}
@@ -155,7 +173,8 @@ export function ModalShell({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -186,10 +205,27 @@ export function ConfirmDialog({
   loading = false,
   children,
 }: ConfirmDialogProps) {
-  if (!open) return null;
+  const [mounted, setMounted] = React.useState(false);
 
-  return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+  React.useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!open) return null;
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 grid place-items-center p-4"
+      style={{
+        zIndex: 1100,
+        isolation: "isolate",
+        backgroundColor: "rgba(2, 6, 23, 0.45)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+      }}
+    >
       <div className="w-full max-w-lg rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.22)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
           {eyebrow}
@@ -217,7 +253,8 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
