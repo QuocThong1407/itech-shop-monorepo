@@ -1,14 +1,23 @@
 "use client";
 
-import { ModalShell } from "@itech/shared";
+import {
+  DetailSection,
+  EmptyState,
+  KeyValueGrid,
+  ModalShell,
+  StatusBadge,
+  StatusSelect,
+} from "@itech/shared";
 import {
   formatDateTime,
   formatMoney,
   formatVariantAttributes,
-  getStatusLabel,
   getStatusSelectClass,
   normalizeStatus,
+  getPaymentLabel,
+  getPaymentTone,
 } from "../helpers";
+import { tabs } from "../constants";
 import type {
   CancellationCustomerUser,
   CancellationPayment,
@@ -57,26 +66,25 @@ export default function CancellationDetailModal({
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Request status
                 </p>
-                <select
+                <StatusSelect
                   value={normalizeStatus(selectedRecord.status)}
                   disabled={actionLoading}
                   onChange={(event) => onStatusChange(selectedRecord, event.target.value)}
-                  className={`mt-2 h-10 w-full rounded-2xl border px-3 text-sm font-semibold outline-none transition ${getStatusSelectClass(
-                    selectedRecord.status,
-                  )}`}
-                >
-                  {["REQUESTED", "APPROVED", "COMPLETED", "REJECTED"].map((status) => (
-                    <option key={status} value={status}>
-                      {getStatusLabel(status)}
-                    </option>
-                  ))}
-                </select>
+                  options={tabs
+                    .filter((item) => item !== "ALL")
+                    .map((item) => ({
+                      value: item,
+                      label: item.charAt(0) + item.slice(1).toLowerCase(),
+                    }))}
+                  toneClassName={getStatusSelectClass(selectedRecord.status)}
+                  className="!mt-2 !h-10 !w-full !rounded-2xl !px-3 !py-2 !font-semibold"
+                />
               </div>
               <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Order total
                 </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
+                <p className="mt-2 text-xl font-semibold text-slate-950">
                   {formatMoney(payment?.amount || 0)}
                 </p>
               </div>
@@ -87,36 +95,29 @@ export default function CancellationDetailModal({
                 <p className="mt-2 text-sm font-semibold text-slate-950">
                   {payment?.method || "N/A"}
                 </p>
+                <StatusBadge className={`mt-2 ${getPaymentTone(payment?.status)}`}>
+                  {getPaymentLabel(payment?.status)}
+                </StatusBadge>
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Reason</p>
+            <DetailSection title="Reason" className="shadow-sm">
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 {selectedRecord.reason || "No reason provided."}
               </p>
-            </div>
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Customer information</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Name</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {customer?.username || "Guest"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Email</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {customer?.email || "No email"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <DetailSection title="Customer information" className="shadow-sm">
+              <KeyValueGrid
+                items={[
+                  { label: "Name", value: customer?.username || "Guest" },
+                  { label: "Email", value: customer?.email || "No email" },
+                ]}
+                columnsClassName="grid gap-4 sm:grid-cols-2"
+              />
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Timeline</p>
+            <DetailSection title="Timeline" className="shadow-sm">
               <div className="mt-4 space-y-4">
                 {[
                   {
@@ -158,17 +159,22 @@ export default function CancellationDetailModal({
                   </div>
                 ))}
               </div>
-            </div>
+            </DetailSection>
           </div>
 
           <div className="space-y-5 bg-slate-50 p-6">
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold text-slate-900">Cancelled items</p>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            <DetailSection
+              title="Cancelled items"
+              className="shadow-sm"
+              actions={
+                <StatusBadge
+                  tone="neutral"
+                  className="bg-slate-100 text-slate-600 ring-slate-200"
+                >
                   {items.length} items
-                </span>
-              </div>
+                </StatusBadge>
+              }
+            >
               <div className="mt-4 space-y-3">
                 {items.length > 0 ? (
                   items.map((item) => {
@@ -209,20 +215,17 @@ export default function CancellationDetailModal({
                     );
                   })
                 ) : (
-                  <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                    No items found for this request.
-                  </div>
+                  <EmptyState title="No items found for this request." />
                 )}
               </div>
-            </div>
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Admin actions</p>
+            <DetailSection title="Admin actions" className="shadow-sm">
               <div className="mt-4 text-sm text-slate-500">
                 Update the request status directly from the status selector to keep the workflow
                 consistent.
               </div>
-            </div>
+            </DetailSection>
           </div>
         </div>
       ) : null}
