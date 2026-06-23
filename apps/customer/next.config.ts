@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   basePath: '/customer',
-  reactStrictMode: true,
+  reactStrictMode: false,
   transpilePackages: ["@itech/shared"],
   images: {
     remotePatterns: [

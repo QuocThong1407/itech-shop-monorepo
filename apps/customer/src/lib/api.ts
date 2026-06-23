@@ -30,6 +30,7 @@ export interface Product {
   variants: ProductVariant[];
   categoryId: string;
   category?: Category;
+  createdAt?: string;
 }
 
 export interface Category {
@@ -290,4 +291,27 @@ export async function getOrder(id: string): Promise<Order> {
   const token = await getAuthToken();
   const client = getApiClient(token);
   return unwrap<Order>(client.get(`/orders/${id}`));
+}
+
+
+
+export interface Promotion {
+  id: string;
+  name: string;
+  description: string | null;
+  image: string | null;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
+export async function getActivePromotions(): Promise<Promotion[]> {
+  const res = await fetch(
+    `${BASE_URL}/promotions?status=ACTIVE&limit=5`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const body = await res.json();
+  const raw = body.data ?? body;
+  return raw.promotions ?? [];
 }

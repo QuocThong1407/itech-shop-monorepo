@@ -371,6 +371,157 @@ export function CustomerShell({
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         {children}
       </main>
+
+      {/* ── Footer ── */}
+      <footer className="bg-zinc-900 text-zinc-300 mt-auto">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Cột 1: thương hiệu */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Image
+                  src={logo}
+                  alt="Logo"
+                  height={28}
+                  width={28}
+                  className="h-7 w-auto brightness-200"
+                />
+                <span className="text-base font-bold text-white">
+                  iTech<span className="text-blue-400">Mobile</span>
+                </span>
+              </div>
+              <p className="text-xs leading-5 text-zinc-400">
+                Hệ thống bán lẻ thiết bị công nghệ uy tín, chính hãng, bảo hành
+                12 tháng.
+              </p>
+              <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-blue-400 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
+                </svg>
+                <span>
+                  Hotline: <strong className="text-white">0879 987 789</strong>
+                </span>
+              </div>
+              <div className="flex items-start gap-1.5 text-xs text-zinc-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-blue-400 shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <span>140 Nguyễn Thị Minh Khai, Phường Tân Mỹ, TP.HCM</span>
+              </div>
+            </div>
+
+            {/* Cột 2: danh mục */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold text-white">Danh mục</h3>
+              <ul className="flex flex-col gap-2">
+                {categories.length > 0
+                  ? categories.map((cat) => (
+                      <li key={cat.id}>
+                        <Link
+                          href={`/products?category=${cat.id}`}
+                          className="text-xs text-zinc-400 hover:text-white transition"
+                        >
+                          {cat.name}
+                        </Link>
+                      </li>
+                    ))
+                  : ["Smartphone", "Laptop", "Tablet", "Phụ kiện", "Audio"].map(
+                      (c) => (
+                        <li key={c}>
+                          <span className="text-xs text-zinc-400">{c}</span>
+                        </li>
+                      ),
+                    )}
+              </ul>
+            </div>
+
+            {/* Cột 3: chính sách */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold text-white">Chính sách</h3>
+              <ul className="flex flex-col gap-2 text-xs text-zinc-400">
+                {[
+                  "Chính sách bảo hành",
+                  "Chính sách đổi trả",
+                  "Chính sách vận chuyển",
+                  "Chính sách bảo mật",
+                  "Điều khoản sử dụng",
+                ].map((item) => (
+                  <li key={item}>
+                    <span className="hover:text-white transition cursor-pointer">
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Cột 4: tài khoản + giờ làm việc */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold text-white">Tài khoản</h3>
+              <ul className="flex flex-col gap-2 text-xs text-zinc-400">
+                {ACCOUNT_LINKS.map(({ href, label }) => (
+                  <li key={href}>
+                    <Link href={href} className="hover:text-white transition">
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+                <li>
+                  <Link href="/cart" className="hover:text-white transition">
+                    Giỏ hàng
+                  </Link>
+                </li>
+              </ul>
+              <div className="mt-2 pt-3 border-t border-zinc-700">
+                <p className="text-xs font-semibold text-white mb-1">
+                  Giờ làm việc
+                </p>
+                <p className="text-xs text-zinc-400">Thứ 2 – Chủ nhật</p>
+                <p className="text-xs text-zinc-400">08:00 – 21:00</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-zinc-700">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-xs text-zinc-500">
+              © 2025 iTechMobile. Tất cả quyền được bảo lưu.
+            </p>
+            <p className="text-xs text-zinc-500">
+              Thiết kế bởi <span className="text-blue-400">iTech Team</span>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
