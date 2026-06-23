@@ -5,11 +5,20 @@ export type ApiError = {
   code?: string;
 };
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  total: number;
+export type Pagination = {
   page: number;
   limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type PagedResult<TKey extends string, T> = {
+  [K in TKey]: T[];
+} & { pagination: Pagination };
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  pagination: Pagination;
 };
 
 export type Money = {

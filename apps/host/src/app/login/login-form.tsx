@@ -4,7 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { getAppHomePath, getRoleFromPath, normalizeAuthRole } from "@itech/shared/auth";
+import {
+  getAppHomePath,
+  getRoleFromPath,
+  normalizeAuthRole,
+} from "@itech/shared/auth";
 import { Badge } from "@itech/shared";
 import Logo from "@itech/shared/assets/logo.png";
 
@@ -84,8 +88,7 @@ export default function LoginForm() {
       }
 
       const redirectPath = resolveRedirectPath(nextPath, role);
-      router.replace(redirectPath);
-      router.refresh();
+      window.location.href = redirectPath;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -107,8 +110,8 @@ export default function LoginForm() {
                 Shop smarter, track orders faster, and stay signed in securely.
               </h1>
               <p className="mt-4 max-w-lg text-sm leading-6 text-slate-300">
-                Sign in to access your cart, saved addresses, order history, and delivery updates
-                from one unified storefront.
+                Sign in to access your cart, saved addresses, order history, and
+                delivery updates from one unified storefront.
               </p>
             </div>
           </div>
@@ -142,7 +145,8 @@ export default function LoginForm() {
                   Sign in to continue shopping
                 </h2>
                 <p className="mt-2 text-sm text-zinc-600">
-                  Use your customer account to manage cart, orders, and delivery details.
+                  Use your customer account to manage cart, orders, and delivery
+                  details.
                 </p>
               </div>
 

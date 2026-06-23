@@ -36,9 +36,16 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
+  let message = `Request failed with status ${response.status}`;
+  try {
+    const body = await response.json();
+    if (body?.message) message = body.message;
+  } catch {
+    const text = await response.text().catch(() => "");
+    if (text) message = text;
   }
+  throw new Error(message);
+}
 
   return (await response.json()) as T;
 }
@@ -109,6 +116,14 @@ export function createApiClient(options: ApiClientOptions) {
     put<T>(path: string, body?: unknown) {
       return apiRequest<T>(baseUrl, path, {
         method: "PUT",
+        credentials,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    },
+    patch<T>(path: string, body?: unknown) {
+      return apiRequest<T>(baseUrl, path, {
+        method: "PATCH",
         credentials,
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: body === undefined ? undefined : JSON.stringify(body),
