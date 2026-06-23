@@ -6,6 +6,223 @@ const {
   deleteImageFromSupabase,
 } = require("../../utils/uploadHelper");
 
+const validateParsedVariants = (parsedVariants) => {
+  if (!Array.isArray(parsedVariants)) {
+    throw { status: 400, message: "Variants must be an array" };
+  }
+
+  if (parsedVariants.length === 0) {
+    throw {
+      status: 400,
+      message:
+        "Variants array cannot be empty. Either provide variants or remove the variants field.",
+    };
+  }
+
+  for (const variant of parsedVariants) {
+    if (
+      !variant.variantAttributes &&
+      (!variant.attributes || typeof variant.attributes !== "object")
+    ) {
+      throw {
+        status: 400,
+        message: "Each variant must have variantAttributes object",
+      };
+    }
+
+    const attributes = variant.variantAttributes || variant.attributes || {};
+    if (typeof attributes !== "object" || Object.keys(attributes).length === 0) {
+      throw { status: 400, message: "Variant attributes cannot be empty" };
+    }
+
+    if (variant.quantity !== undefined && variant.quantity < 0) {
+      throw { status: 400, message: "Variant quantity must be positive" };
+    }
+  }
+
+  const seen = new Set();
+  for (const variant of parsedVariants) {
+    const key = JSON.stringify(variant.variantAttributes || variant.attributes || {});
+    if (seen.has(key)) {
+      throw { status: 400, message: `Duplicate variant found: ${key}` };
+    }
+    seen.add(key);
+  }
+};
+
+const parseVariantsInput = (variants) => {
+  if (!variants) return [];
+
+  let parsedVariants = variants;
+  if (typeof variants === "string") {
+    try {
+      parsedVariants = JSON.parse(variants);
+    } catch {
+      throw { status: 400, message: "Invalid variants format" };
+    }
+  }
+
+  validateParsedVariants(parsedVariants);
+  return parsedVariants;
+};
+
+const resolveCreatorContext = async ({ actorUserId, actorRole, sellerUserId }) => {
+  if (actorRole === "ADMIN") {
+    const { data: admin } = await supabase
+      .from("Admin")
+      .select("id")
+      .eq("userId", actorUserId)
+      .single();
+
+    if (!admin) {
+      throw { status: 403, message: "Only admins can create products" };
+    }
+
+    if (!sellerUserId) {
+      throw {
+        status: 400,
+        message: "Seller user ID is required when admin imports products",
+      };
+    }
+
+    const { data: seller, error: sellerError } = await supabase
+      .from("Seller")
+      .select("id, userId, User!Seller_userId_fkey(username, email)")
+      .eq("userId", sellerUserId)
+      .single();
+
+    if (sellerError || !seller) {
+      throw {
+        status: 400,
+        message: "Seller not found. Please provide a valid seller user ID.",
+      };
+    }
+
+    return {
+      sellerId: seller.id,
+      sellerUserId: seller.userId,
+    };
+  }
+
+  if (actorRole === "SELLER") {
+    const { data: seller, error: sellerError } = await supabase
+      .from("Seller")
+      .select("id, userId")
+      .eq("userId", actorUserId)
+      .single();
+
+    if (sellerError || !seller) {
+      throw { status: 403, message: "Only sellers can import their own products" };
+    }
+
+    if (sellerUserId && sellerUserId !== actorUserId) {
+      throw {
+        status: 403,
+        message: "Sellers can only import products assigned to themselves",
+      };
+    }
+
+    return {
+      sellerId: seller.id,
+      sellerUserId: seller.userId,
+    };
+  }
+
+  throw { status: 403, message: "You do not have permission to import products" };
+};
+
+const createProductRecord = async ({
+  name,
+  description,
+  price,
+  stockQuantity,
+  categoryId,
+  variants,
+  sellerId,
+  files = [],
+}) => {
+  const now = new Date().toISOString();
+
+  const { data: category } = await supabase
+    .from("Category")
+    .select("id")
+    .eq("id", categoryId)
+    .single();
+
+  if (!category) {
+    throw { status: 400, message: "Category not found" };
+  }
+
+  const productId = uuidv4();
+  let productImages = [];
+
+  const mainFiles = files ? files.filter((file) => file.fieldname === "images") : [];
+  if (mainFiles.length > 0) {
+    for (const file of mainFiles) {
+      const url = await uploadImageToSupabase(file, "products", `${productId}/`);
+      productImages.push(url);
+    }
+  }
+
+  const safeParsedVariants = Array.isArray(variants) ? variants : [];
+  const { variantTypes, variantOptions } = extractVariantMetadata(safeParsedVariants);
+  const finalStockQuantity =
+    safeParsedVariants.length > 0
+      ? safeParsedVariants.reduce((sum, variant) => sum + (variant.quantity || 0), 0)
+      : stockQuantity || 0;
+
+  const { data: product, error } = await supabase
+    .from("Product")
+    .insert({
+      id: productId,
+      name,
+      description,
+      price,
+      stockQuantity: finalStockQuantity,
+      categoryId,
+      images: productImages,
+      variantTypes,
+      variantOptions,
+      createdBy: sellerId,
+      is_deleted: false,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    for (const image of productImages) {
+      await deleteImageFromSupabase(image, "products").catch(() => {});
+    }
+    throw error;
+  }
+
+  if (safeParsedVariants.length > 0) {
+    const variantRecords = safeParsedVariants.map((variant) => ({
+      id: uuidv4(),
+      productId,
+      quantity: variant.quantity || 0,
+      variantAttributes: variant.variantAttributes || variant.attributes || {},
+      images: [],
+      priceAdjustment: variant.priceAdjustment || 0,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    const { error: variantError } = await supabase
+      .from("ProductVariant")
+      .insert(variantRecords);
+
+    if (variantError) {
+      await supabase.from("Product").delete().eq("id", productId);
+      throw variantError;
+    }
+  }
+
+  return product;
+};
+
 //trích xuất metadata từ danh sách variants
 const extractVariantMetadata = (variants) => {
   if (!variants || variants.length === 0) {
@@ -77,158 +294,117 @@ const createProduct = async ({
   variants,
   createdBy,
 }) => {
-  const now = new Date().toISOString();
+  const { sellerId } = await resolveCreatorContext({
+    actorUserId: createdBy,
+    actorRole: "ADMIN",
+    sellerUserId,
+  });
+  const parsedVariants = parseVariantsInput(variants);
 
-  const { data: admin } = await supabase
-    .from("Admin")
-    .select("id")
-    .eq("userId", createdBy)
-    .single();
+  return createProductRecord({
+    name,
+    description,
+    price,
+    stockQuantity,
+    categoryId,
+    variants: parsedVariants,
+    sellerId,
+    files,
+  });
+};
 
-  if (!admin) {
-    throw { status: 403, message: "Only admins can create products" };
-  }
+const importProducts = async (products, actor, options = {}) => {
+  const continueOnError = options.continueOnError !== false;
+  const results = [];
 
-  // Kiểm tra seller
-  const { data: seller, error: sellerError } = await supabase
-    .from("Seller")
-    .select("id, userId, User!Seller_userId_fkey(username, email)")
-    .eq("userId", sellerUserId)
-    .single();
+  for (let index = 0; index < products.length; index += 1) {
+    const item = products[index];
 
-  if (sellerError || !seller) {
-    throw {
-      status: 400,
-      message: "Seller not found. Please provide a valid seller ID.",
-    };
-  }
-
-  // kt category
-  const { data: category } = await supabase
-    .from("Category")
-    .select("id")
-    .eq("id", categoryId)
-    .single();
-
-  if (!category) {
-    throw { status: 400, message: "Category not found" };
-  }
-
-  const productId = uuidv4();
-  let productImages = [];
-
-  // upload ảnh
-  const mainFiles = files ? files.filter((f) => f.fieldname === "images") : [];
-
-  if (mainFiles.length > 0) {
-    for (const file of mainFiles) {
-      const url = await uploadImageToSupabase(
-        file,
-        "products",
-        `${productId}/`,
-      );
-      productImages.push(url);
-    }
-  }
-
-  // xử lý variants
-  let parsedVariants = [];
-  if (variants) {
     try {
-      parsedVariants =
-        typeof variants === "string" ? JSON.parse(variants) : variants;
-    } catch (e) {
-      throw { status: 400, message: "Invalid variants format" };
-    }
-  }
-
-  const safeParsedVariants = Array.isArray(parsedVariants)
-    ? parsedVariants
-    : [];
-
-  // tạo metadata variant
-  const { variantTypes, variantOptions } =
-    extractVariantMetadata(parsedVariants);
-
-  // Nếu có variant thì stock = tổng quantity variant
-  // Nếu không có variant thì dùng stockQuantity nhập vào
-  const finalStockQuantity =
-    parsedVariants.length > 0
-      ? parsedVariants.reduce((sum, v) => sum + (v.quantity || 0), 0)
-      : stockQuantity || 0;
-
-  const { data: product, error } = await supabase
-    .from("Product")
-    .insert({
-      id: productId,
-      name,
-      description,
-      price,
-      stockQuantity: finalStockQuantity,
-      categoryId,
-      images: productImages,
-      variantTypes,
-      variantOptions,
-      createdBy: seller.id, // gán product cho seller
-      is_deleted: false,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    for (const img of productImages)
-      await deleteImageFromSupabase(img, "products").catch(() => {});
-    throw error;
-  }
-
-  if (safeParsedVariants.length > 0) {
-    const variantRecords = [];
-
-    for (let i = 0; i < safeParsedVariants.length; i++) {
-      const v = safeParsedVariants[i];
-      let variantImageUrls = [];
-
-      // upload ảnh variant nếu có
-      const variantFileKey = `variant_image_${i}`;
-      const specificFile = files
-        ? files.find((f) => f.fieldname === variantFileKey)
-        : null;
-
-      if (specificFile) {
-        const vId = uuidv4();
-        const url = await uploadImageToSupabase(
-          specificFile,
-          "products",
-          `variant-images/${productId}/${vId}/`,
-        );
-        variantImageUrls.push(url);
+      if (!item || typeof item !== "object") {
+        throw { status: 400, message: "Each product must be an object" };
       }
 
-      variantRecords.push({
-        id: uuidv4(),
-        productId,
-        quantity: v.quantity || 0,
-        variantAttributes: v.variantAttributes || v.attributes || {},
-        images: variantImageUrls,
-        priceAdjustment: v.priceAdjustment || 0,
-        createdAt: now,
-        updatedAt: now,
+      const {
+        name,
+        description,
+        price,
+        stockQuantity,
+        categoryId,
+        sellerUserId,
+        variants,
+      } = item;
+
+      if (!name || !description || price === undefined || !categoryId) {
+        throw {
+          status: 400,
+          message: "Name, description, price, and categoryId are required",
+        };
+      }
+
+      if (Number(price) < 0) {
+        throw { status: 400, message: "Price must be a positive number" };
+      }
+
+      const parsedVariants = parseVariantsInput(variants);
+      if (parsedVariants.length === 0) {
+        if (stockQuantity === undefined || Number(stockQuantity) < 0) {
+          throw {
+            status: 400,
+            message:
+              "stockQuantity is required and must be positive for products without variants",
+          };
+        }
+      }
+
+      const creator = await resolveCreatorContext({
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+        sellerUserId,
       });
-    }
 
-    const { error: variantError } = await supabase
-      .from("ProductVariant")
-      .insert(variantRecords);
+      const created = await createProductRecord({
+        name,
+        description,
+        price: Number(price),
+        stockQuantity:
+          stockQuantity === undefined ? undefined : Number(stockQuantity),
+        categoryId,
+        variants: parsedVariants,
+        sellerId: creator.sellerId,
+        files: [],
+      });
 
-    if (variantError) {
-      await supabase.from("Product").delete().eq("id", productId);
-      throw variantError;
+      results.push({
+        index,
+        success: true,
+        productId: created.id,
+        name: created.name,
+      });
+    } catch (error) {
+      results.push({
+        index,
+        success: false,
+        name: item?.name || null,
+        error: error.message || "Failed to import product",
+      });
+
+      if (!continueOnError) {
+        break;
+      }
     }
   }
 
-  return product;
+  const successCount = results.filter((item) => item.success).length;
+  const failureCount = results.length - successCount;
+
+  return {
+    total: products.length,
+    processed: results.length,
+    successCount,
+    failureCount,
+    results,
+  };
 };
 
 // Admin cập nhật product
@@ -612,12 +788,85 @@ const deleteProduct = async (productId, userId) => {
   return true;
 };
 
+const bulkDeleteProducts = async (productIds, userId) => {
+  const { data: admin } = await supabase
+    .from("Admin")
+    .select("id")
+    .eq("userId", userId)
+    .single();
+
+  if (!admin) {
+    throw { status: 403, message: "Only admins can delete products" };
+  }
+
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    throw { status: 400, message: "productIds must be a non-empty array" };
+  }
+
+  const normalizedIds = [...new Set(productIds.filter((id) => typeof id === "string" && id.trim()))];
+
+  if (normalizedIds.length === 0) {
+    throw { status: 400, message: "No valid product IDs were provided" };
+  }
+
+  const { data: existingProducts, error: fetchError } = await supabase
+    .from("Product")
+    .select("id")
+    .in("id", normalizedIds)
+    .eq("is_deleted", false);
+
+  if (fetchError) throw fetchError;
+
+  const existingIds = new Set((existingProducts || []).map((product) => product.id));
+  const deletableIds = normalizedIds.filter((id) => existingIds.has(id));
+  const now = new Date().toISOString();
+
+  if (deletableIds.length > 0) {
+    const { error: updateError } = await supabase
+      .from("Product")
+      .update({
+        is_deleted: true,
+        updatedAt: now,
+      })
+      .in("id", deletableIds);
+
+    if (updateError) throw updateError;
+  }
+
+  const results = normalizedIds.map((id) => {
+    if (existingIds.has(id)) {
+      return {
+        id,
+        success: true,
+      };
+    }
+
+    return {
+      id,
+      success: false,
+      error: "Product not found or already deleted",
+    };
+  });
+
+  const deletedCount = results.filter((item) => item.success).length;
+  const failureCount = results.length - deletedCount;
+
+  return {
+    total: normalizedIds.length,
+    deletedCount,
+    failureCount,
+    results,
+  };
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
   createProduct,
+  importProducts,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
   updateProductStock,
   syncVariantMetadata,
 };

@@ -4,6 +4,12 @@ export type ApiClientOptions = {
   credentials?: RequestCredentials;
 };
 
+export type AppApiClientOptions = {
+  baseUrl: string;
+  credentials?: RequestCredentials;
+  onUnauthorized?: (nextPath: string) => void;
+};
+
 function normalizePath(path: string) {
   return path.startsWith("/") ? path : `/${path}`;
 }
@@ -18,7 +24,11 @@ export async function apiRequest<T>(
   init: RequestInit = {}
 ): Promise<T> {
   const headers = new Headers(init.headers ?? {});
-  headers.set("Content-Type", "application/json");
+  const isFormData = init.body instanceof FormData;
+
+  if (!isFormData && init.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const response = await fetch(joinUrl(baseUrl, path), {
     ...init,
@@ -38,6 +48,50 @@ export async function apiRequest<T>(
 }
 
   return (await response.json()) as T;
+}
+
+export function createAppApiClient(options: AppApiClientOptions) {
+  const {
+    baseUrl,
+    credentials = "include",
+    onUnauthorized,
+  } = options;
+
+  return {
+    async request<T>(
+      path: string,
+      init: RequestInit = {},
+      nextPath = "/",
+    ): Promise<T> {
+      const isFormData = init.body instanceof FormData;
+      const headers = new Headers(init.headers ?? {});
+
+      if (!isFormData && init.body !== undefined && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
+
+      const response = await fetch(joinUrl(baseUrl, path), {
+        credentials,
+        ...init,
+        headers,
+      });
+
+      if (response.status === 401) {
+        onUnauthorized?.(nextPath);
+        throw new Error("Unauthorized");
+      }
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(
+          payload?.message || `Request failed with ${response.status}`,
+        );
+      }
+
+      return payload.data as T;
+    },
+  };
 }
 
 export function createApiClient(options: ApiClientOptions) {

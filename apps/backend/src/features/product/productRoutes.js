@@ -1,11 +1,48 @@
 // backend/src/features/product/productRoutes.js
 const express = require("express");
+const multer = require("multer");
 const router = express.Router();
 const productController = require("./productController");
 const { authenticate, checkRole, upload } = require("../../middleware/index");
 
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    const mime = (file.mimetype || "").toLowerCase();
+    const originalName = (file.originalname || "").toLowerCase();
+    const allowedMimeTypes = [
+      "text/csv",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ];
+    const allowedExtensions = [".csv", ".xlsx"];
+
+    const hasAllowedMime = allowedMimeTypes.includes(mime);
+    const hasAllowedExtension = allowedExtensions.some((ext) =>
+      originalName.endsWith(ext),
+    );
+
+    if (hasAllowedMime || hasAllowedExtension) {
+      cb(null, true);
+      return;
+    }
+
+    cb(new Error("Only CSV and XLSX files are allowed"), false);
+  },
+});
+
 // public
 router.get("/", productController.getAllProducts); // GET /api/products
+router.post(
+  "/import",
+  authenticate,
+  checkRole("ADMIN", "SELLER"),
+  importUpload.single("file"),
+  productController.importProducts,
+); // POST /api/products/import
 router.get("/:id", productController.getProductById); // GET /api/products/:id
 // seller only update stock
 router.patch(
@@ -27,6 +64,7 @@ router.put(
 router.use(authenticate, checkRole("ADMIN"));
 
 router.post("/", upload.any(), productController.createProduct); // POST /api/products
+router.post("/bulk-delete", productController.bulkDeleteProducts); // POST /api/products/bulk-delete
 router.delete("/:id", productController.deleteProduct); // DELETE /api/products/:id
 
 module.exports = router;
