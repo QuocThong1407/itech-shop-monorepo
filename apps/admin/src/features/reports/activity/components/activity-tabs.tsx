@@ -26,9 +26,9 @@ function ActivityTable<T extends ActivityRowBase>({
       <div className="border-b border-slate-200 px-5 py-4">
         <p className="text-sm font-semibold text-slate-900">{title}</p>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[24rem]">
         <table className="w-full min-w-[560px] table-fixed divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+          <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_rgba(226,232,240,1)]">
             <tr>
               <th className="w-[34%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                 Username
