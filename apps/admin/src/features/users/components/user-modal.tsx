@@ -1,6 +1,14 @@
 "use client";
 
-import { ModalShell } from "@itech/shared";
+import {
+  Button,
+  DetailSection,
+  FormField,
+  KeyValueGrid,
+  ModalShell,
+  SelectInput,
+  TextInput,
+} from "@itech/shared";
 import { formatDateTime } from "../../../lib/admin-api";
 import type { ModalMode, UserFormState, UserRecord, UserRole } from "../types";
 
@@ -54,27 +62,26 @@ export default function UserModal({
     >
       <div className="p-6">
         {modalMode === "view" && selectedUser ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              ["Username", selectedUser.username],
-              ["Email", selectedUser.email],
-              ["Role", selectedUser.role],
-              ["Status", selectedUser.emailVerified ? "Verified" : "Unverified"],
-              ["Created at", formatDateTime(selectedUser.createdAt)],
-              ["Updated at", formatDateTime(selectedUser.updatedAt)],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-[1.25rem] border border-slate-200 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">{value}</p>
-              </div>
-            ))}
-          </div>
+          <DetailSection title="Profile details" className="p-0 shadow-none border-0 bg-transparent">
+            <KeyValueGrid
+              items={[
+                { label: "Username", value: selectedUser.username },
+                { label: "Email", value: selectedUser.email },
+                { label: "Role", value: selectedUser.role },
+                {
+                  label: "Status",
+                  value: selectedUser.emailVerified ? "Verified" : "Unverified",
+                },
+                { label: "Created at", value: formatDateTime(selectedUser.createdAt) },
+                { label: "Updated at", value: formatDateTime(selectedUser.updatedAt) },
+              ]}
+            />
+          </DetailSection>
         ) : modalMode ? (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Username</span>
-                <input
+              <FormField label="Username">
+                <TextInput
                   value={formState.username}
                   onChange={(event) =>
                     onFormChange((current) => ({
@@ -82,14 +89,13 @@ export default function UserModal({
                       username: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                  className="bg-slate-50 focus:bg-white"
                   placeholder="Enter username"
                 />
-              </label>
+              </FormField>
 
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Email</span>
-                <input
+              <FormField label="Email">
+                <TextInput
                   value={formState.email}
                   onChange={(event) =>
                     onFormChange((current) => ({
@@ -98,15 +104,14 @@ export default function UserModal({
                     }))
                   }
                   disabled={modalMode === "edit"}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="bg-slate-50 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="Enter email"
                 />
-              </label>
+              </FormField>
 
               {modalMode === "add" ? (
-                <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-slate-700">Password</span>
-                  <input
+                <FormField label="Password">
+                  <TextInput
                     type="password"
                     value={formState.password}
                     onChange={(event) =>
@@ -115,15 +120,14 @@ export default function UserModal({
                         password: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                    className="bg-slate-50 focus:bg-white"
                     placeholder="Enter password"
                   />
-                </label>
+                </FormField>
               ) : null}
 
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Role</span>
-                <select
+              <FormField label="Role">
+                <SelectInput
                   value={formState.role}
                   onChange={(event) =>
                     onFormChange((current) => ({
@@ -131,35 +135,26 @@ export default function UserModal({
                       role: event.target.value as UserRole,
                     }))
                   }
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
+                  className="bg-slate-50 focus:bg-white"
                 >
                   <option value="CUSTOMER">Customer</option>
                   <option value="SELLER">Seller</option>
                   <option value="ADMIN">Admin</option>
-                </select>
-              </label>
+                </SelectInput>
+              </FormField>
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              <Button variant="secondary" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={onSubmit}
-                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              </Button>
+              <Button variant="primary" disabled={saving} onClick={onSubmit}>
                 {saving
                   ? "Saving..."
                   : modalMode === "add"
                     ? "Create user"
                     : "Save changes"}
-              </button>
+              </Button>
             </div>
           </>
         ) : null}

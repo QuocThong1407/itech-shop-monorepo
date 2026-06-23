@@ -91,13 +91,13 @@ const buttonVariantClasses: Record<ButtonVariant, string> = {
   primary:
     "bg-slate-950 text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:bg-slate-800",
   secondary:
-    "border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50",
-  danger: "bg-rose-600 text-white shadow-[0_14px_30px_rgba(225,29,72,0.18)] hover:bg-rose-700",
+    "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+  danger: "bg-rose-600 border border-rose-200 text-rose-700 shadow-[0_14px_30px_rgba(225,29,72,0.18)] hover:bg-rose-700",
   ghost: "bg-slate-100 text-slate-700 hover:bg-slate-200",
 };
 
 const buttonSizeClasses: Record<ButtonSize, string> = {
-  sm: "h-10 px-4 text-sm",
+  sm: "h-9 px-3 text-sm",
   md: "h-11 px-5 text-sm",
   icon: "h-11 w-11",
 };
@@ -223,7 +223,7 @@ export type SurfaceCardProps = React.PropsWithChildren<{
 export function SurfaceCard({ className = "", children }: SurfaceCardProps) {
   return (
     <article
-      className={`rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
+      className={`rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
     >
       {children}
     </article>
@@ -403,7 +403,7 @@ type BaseFieldProps = {
 };
 
 const baseFieldClassName =
-  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition";
+  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:bg-white";
 
 export type TextInputProps = React.InputHTMLAttributes<HTMLInputElement> & BaseFieldProps;
 
@@ -412,8 +412,8 @@ export function TextInput({ className = "", invalid = false, ...props }: TextInp
     <input
       className={`${baseFieldClassName} ${
         invalid
-          ? "border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-          : "focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+          ? "border-rose-300 focus:border-rose-400 focus:ring-1 focus:ring-rose-100"
+          : "focus:border-slate-400 focus:ring-1 focus:ring-slate-100"
       } ${className}`}
       {...props}
     />
@@ -427,8 +427,8 @@ export function TextArea({ className = "", invalid = false, ...props }: TextArea
     <textarea
       className={`${baseFieldClassName} min-h-[120px] resize-y ${
         invalid
-          ? "border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-          : "focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+          ? "border-rose-300 focus:border-rose-400 focus:ring-1 focus:ring-rose-100"
+          : "focus:border-slate-400 focus:ring-1 focus:ring-slate-100"
       } ${className}`}
       {...props}
     />
@@ -442,8 +442,8 @@ export function SelectInput({ className = "", invalid = false, children, ...prop
     <select
       className={`${baseFieldClassName} ${
         invalid
-          ? "border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-          : "focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+          ? "border-rose-300 focus:border-rose-400 focus:ring-1 focus:ring-rose-100"
+          : "focus:border-slate-400 focus:ring-1 focus:ring-slate-100"
       } ${className}`}
       {...props}
     >
@@ -643,7 +643,7 @@ export function DetailSection({
   children,
 }: DetailSectionProps) {
   return (
-    <SurfaceCard className={`p-5 ${className}`}>
+    <SurfaceCard className={`${className}`}>
       <PanelHeader title={title} description={description} actions={actions} />
       <div className={bodyClassName ? `mt-4 ${bodyClassName}` : "mt-4"}>{children}</div>
     </SurfaceCard>
