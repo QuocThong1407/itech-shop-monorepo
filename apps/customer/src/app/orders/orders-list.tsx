@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@itech/shared";
 import { type Order, type OrderStatus, getOrderTotal } from "@/lib/order-types";
 import { ArrowRight, Loader2, Package } from "lucide-react";
-
+import { getActiveCancellation, getActiveReturn } from "@/lib/order-types";
 const STATUS_TONE: Record<
   OrderStatus,
   "warning" | "neutral" | "success" | "danger"
@@ -26,13 +26,17 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   CANCELLED: "Đã hủy",
 };
 
-const STATUS_TABS: Array<{ value: OrderStatus | "ALL"; label: string }> = [
+const STATUS_TABS: Array<{
+  value: OrderStatus | "ALL" | "RETURNED";
+  label: string;
+}> = [
   { value: "ALL", label: "Tất cả" },
   { value: "PENDING", label: "Chờ xác nhận" },
   { value: "CONFIRMED", label: "Đã xác nhận" },
   { value: "SHIPPED", label: "Đang giao" },
   { value: "DELIVERED", label: "Đã giao" },
   { value: "CANCELLED", label: "Đã hủy" },
+  { value: "RETURNED", label: "Trả hàng" },
 ];
 
 function formatVND(amount: number) {
@@ -61,7 +65,7 @@ interface OrdersListProps {
   initialTotal: number;
   initialPage: number;
   limit: number;
-  status: OrderStatus | "ALL";
+  status: OrderStatus | "ALL" | "RETURNED";
 }
 
 export default function OrdersList({
@@ -83,12 +87,17 @@ export default function OrdersList({
 
   const hasMore = orders.length < total;
 
-  function handleStatusChange(next: OrderStatus | "ALL") {
+  function handleStatusChange(next: OrderStatus | "ALL" | "RETURNED") {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "ALL") {
       params.delete("status");
+      params.delete("hasReturn");
+    } else if (next === "RETURNED") {
+      params.delete("status");
+      params.set("hasReturn", "true");
     } else {
       params.set("status", next);
+      params.delete("hasReturn");
     }
     startTransition(() => {
       router.push(`/orders?${params.toString()}`);
@@ -103,7 +112,11 @@ export default function OrdersList({
       const params = new URLSearchParams();
       params.set("page", String(nextPage));
       params.set("limit", String(limit));
-      if (status !== "ALL") params.set("status", status);
+      if (status === "RETURNED") {
+        params.set("hasReturn", "true");
+      } else if (status !== "ALL") {
+        params.set("status", status);
+      }
 
       const res = await fetch(`/customer/api/orders?${params.toString()}`);
       if (!res.ok) {
@@ -184,9 +197,36 @@ export default function OrdersList({
                       <span className="font-geist text-sm font-semibold text-zinc-900">
                         #{order.id.slice(0, 8).toUpperCase()}
                       </span>
+
+                      {/* Badge status gốc */}
                       <Badge tone={STATUS_TONE[order.status]}>
                         {STATUS_LABEL[order.status]}
                       </Badge>
+
+                      {/* Badge phụ — cùng size với Badge component */}
+                      {(() => {
+                        const cancelReq = getActiveCancellation(order);
+                        const returnReq = getActiveReturn(order);
+                        if (cancelReq) {
+                          return (
+                            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
+                              {cancelReq.status === "APPROVED"
+                                ? "Đã duyệt hủy"
+                                : "Chờ hủy"}
+                            </span>
+                          );
+                        }
+                        if (returnReq) {
+                          return (
+                            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600">
+                              {returnReq.status === "APPROVED"
+                                ? "Đã duyệt hoàn"
+                                : "Chờ hoàn hàng"}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                     <p className="text-xs text-zinc-400">
                       {formatDateShort(order.orderDate)} · {itemCount} sản phẩm

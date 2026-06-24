@@ -101,47 +101,55 @@ const getMyOrders = async (userId, { page = 1, limit = 10, status }) => {
 
   // query orders theo customer
   let query = supabase
-    .from("Order")
-    .select(
-      `
+  .from("Order")
+  .select(
+    `
+    id,
+    orderDate,
+    status,
+    createdAt,
+    updatedAt,
+    Address!Order_addressId_fkey(
       id,
-      orderDate,
-      status,
-      createdAt,
-      updatedAt,
-      Address!Order_addressId_fkey(
+      phoneNumber,
+      address,
+      street,
+      ward,
+      district,
+      province
+    ),
+    OrderItem(
+      id,
+      quantity,
+      ProductVariant!OrderItem_productVariantId_fkey(
         id,
-        phoneNumber,
-        address,
-        street,
-        ward,
-        district,
-        province
-      ),
-      OrderItem(
-        id,
-        quantity,
-        ProductVariant!OrderItem_productVariantId_fkey(
+        variantAttributes,
+        priceAdjustment,
+        Product!ProductVariant_productId_fkey(
           id,
-          variantAttributes,
-          priceAdjustment,
-          Product!ProductVariant_productId_fkey(
-            id,
-            name,
-            price,
-            images
-          )
+          name,
+          price,
+          images
         )
-      ),
-      Payment(
-        id,
-        amount,
-        method,
-        status
       )
-    `,
-      { count: "exact" },
+    ),
+    Payment(
+      id,
+      amount,
+      method,
+      status
+    ),
+    Cancellation!Cancellation_orderId_fkey(
+      id,
+      status
+    ),
+    Return!Return_orderId_fkey(
+      id,
+      status
     )
+  `,
+    { count: "exact" },
+  )
     .eq("customerId", customer.id);
 
   // filter theo trạng thái
@@ -310,62 +318,70 @@ const getAllOrders = async (
 // lấy chi tiết một order
 const getOrderById = async (orderId, userId, userRole) => {
   const { data: order, error } = await supabase
-    .from("Order")
-    .select(
-      `
+  .from("Order")
+  .select(
+    `
+    id,
+    orderDate,
+    status,
+    createdAt,
+    updatedAt,
+    customerId,
+    Customer!Order_customerId_fkey(
       id,
-      orderDate,
-      status,
-      createdAt,
-      updatedAt,
-      customerId,
-      Customer!Order_customerId_fkey(
+      userId,
+      User!Customer_userId_fkey(
         id,
-        userId,
-        User!Customer_userId_fkey(
-          id,
-          username,
-          email
-        )
-      ),
-      Address!Order_addressId_fkey(
-        id,
-        phoneNumber,
-        address,
-        street,
-        ward,
-        district,
-        province
-      ),
-      OrderItem(
-        id,
-        quantity,
-        ProductVariant!OrderItem_productVariantId_fkey(
-          id,
-          variantAttributes,
-          priceAdjustment,
-          images,
-          Product!ProductVariant_productId_fkey(
-            id,
-            name,
-            description,
-            price,
-            images,
-            createdBy
-          )
-        )
-      ),
-      Payment(
-        id,
-        amount,
-        method,
-        status,
-        paymentDate
+        username,
+        email
       )
-    `,
+    ),
+    Address!Order_addressId_fkey(
+      id,
+      phoneNumber,
+      address,
+      street,
+      ward,
+      district,
+      province
+    ),
+    OrderItem(
+      id,
+      quantity,
+      ProductVariant!OrderItem_productVariantId_fkey(
+        id,
+        variantAttributes,
+        priceAdjustment,
+        images,
+        Product!ProductVariant_productId_fkey(
+          id,
+          name,
+          description,
+          price,
+          images,
+          createdBy
+        )
+      )
+    ),
+    Payment(
+      id,
+      amount,
+      method,
+      status,
+      paymentDate
+    ),
+    Cancellation!Cancellation_orderId_fkey(
+      id,
+      status
+    ),
+    Return!Return_orderId_fkey(
+      id,
+      status
     )
-    .eq("id", orderId)
-    .single();
+  `,
+  )
+  .eq("id", orderId)
+  .single();
 
   if (error) throw error;
   if (!order) throw { status: 404, message: "Order not found" };

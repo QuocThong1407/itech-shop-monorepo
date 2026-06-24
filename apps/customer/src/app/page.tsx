@@ -293,41 +293,32 @@ export default async function CustomerHomePage() {
       {/* ── Row danh mục icon ── */}
       {categories.length > 0 && (
         <section>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            <Link
-              href="/products"
-              className="flex flex-col items-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 hover:border-blue-400 hover:shadow-sm transition group"
-            >
-              <span className="text-blue-600 group-hover:scale-110 transition-transform">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-7 w-7"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
-                </svg>
-              </span>
-              <span className="text-xs font-medium text-zinc-700 text-center">
-                Tất cả
-              </span>
-            </Link>
+          <h2 className="text-center text-lg font-bold text-zinc-800 uppercase tracking-wide mb-4">
+            Danh mục nổi bật
+          </h2>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/products?category=${cat.id}`}
-                className="flex flex-col items-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 hover:border-blue-400 hover:shadow-sm transition group"
+                className="flex flex-col items-center gap-2 group"
               >
-                <span className="text-blue-600 group-hover:scale-110 transition-transform">
-                  <CategoryIcon name={cat.name} />
-                </span>
-                <span className="text-xs font-medium text-zinc-700 text-center line-clamp-1">
+                <div className="relative h-24 w-full rounded-2xl overflow-hidden bg-zinc-100 group-hover:shadow-md transition-shadow">
+                  {cat.image ? (
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-blue-600">
+                      <CategoryIcon name={cat.name} />
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs font-semibold text-blue-600 text-center group-hover:text-blue-800 transition-colors">
                   {cat.name}
                 </span>
               </Link>

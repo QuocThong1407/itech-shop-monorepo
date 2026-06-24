@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LogoutButton } from "@itech/shared";
 import logo from "@itech/shared/assets/logo.png";
 
@@ -20,7 +20,6 @@ interface CustomerShellProps {
 const ACCOUNT_LINKS = [
   { href: "/orders", label: "Đơn hàng" },
   { href: "/profile", label: "Tài khoản" },
-  { href: "/profile/addresses", label: "Địa chỉ" },
 ];
 
 export function CustomerShell({
@@ -29,6 +28,7 @@ export function CustomerShell({
   userName,
   categories = [],
 }: CustomerShellProps) {
+  const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -134,7 +134,7 @@ export function CustomerShell({
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span>0879 987 789</span>
+                <span>0398130750</span>
               </div>
 
               {/* Cart */}
@@ -248,10 +248,7 @@ export function CustomerShell({
               <Link
                 href="/products"
                 className={`whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium transition ${
-                  pathname === "/products" &&
-                  !new URLSearchParams(
-                    typeof window !== "undefined" ? window.location.search : "",
-                  ).get("category")
+                  pathname === "/products" && !searchParams.get("category")
                     ? "bg-blue-600 text-white"
                     : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                 }`}
@@ -262,11 +259,17 @@ export function CustomerShell({
                 <Link
                   key={cat.id}
                   href={`/products?category=${cat.id}`}
-                  className="whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition"
+                  className={`whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium transition ${
+                    pathname === "/products" &&
+                    searchParams.get("category") === cat.id
+                      ? "bg-blue-600 text-white"
+                      : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                  }`}
                 >
                   {cat.name}
                 </Link>
               ))}
+
               <div className="ml-auto flex items-center gap-0.5">
                 {ACCOUNT_LINKS.map(({ href, label }) => (
                   <Link
@@ -410,7 +413,7 @@ export function CustomerShell({
                   />
                 </svg>
                 <span>
-                  Hotline: <strong className="text-white">0879 987 789</strong>
+                  Hotline: <strong className="text-white">0398130750</strong>
                 </span>
               </div>
               <div className="flex items-start gap-1.5 text-xs text-zinc-400">
@@ -522,6 +525,21 @@ export function CustomerShell({
           </div>
         </div>
       </footer>
+
+      {/* Zalo floating button */}
+      <a
+        href="https://zalo.me/0398130750"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg hover:scale-110 transition-transform"
+        title="Chat Zalo"
+      >
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/9/91/Icon_of_Zalo.svg"
+          alt="Zalo"
+          className="h-14 w-14 rounded-full"
+        />
+      </a>
     </div>
   );
 }

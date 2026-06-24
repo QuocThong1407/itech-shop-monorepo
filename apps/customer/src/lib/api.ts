@@ -36,6 +36,7 @@ export interface Product {
 export interface Category {
   id: string;
   name: string;
+  image: string | null;
 }
 
 export interface CartProductVariant {
@@ -365,4 +366,38 @@ export async function updateAddress(id: string, input: Partial<CreateAddressInpu
   const token = await getAuthToken();
   const client = getApiClient(token);
   return unwrap<Address>(client.put(`/addresses/${id}`, input));
+}
+
+export interface CancellationOrder {
+  id: string;
+  orderDate: string;
+  status: string;
+  OrderItem: {
+    id: string;
+    quantity: number;
+    ProductVariant: {
+      id: string;
+      variantAttributes: Record<string, string> | null;
+      priceAdjustment: number;
+      images: string[] | null;
+      Product: { id: string; name: string; price: number; images: string[] };
+    };
+  }[];
+  Payment: { id: string; amount: number; method: string; status: string; paymentDate: string | null }[];
+}
+
+export interface Cancellation {
+  id: string;
+  orderId: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  Order: CancellationOrder;
+}
+
+export async function getCancellation(id: string): Promise<Cancellation> {
+  const token = await getAuthToken();
+  const client = getApiClient(token);
+  return unwrap<Cancellation>(client.get(`/cancellations/${id}`));
 }

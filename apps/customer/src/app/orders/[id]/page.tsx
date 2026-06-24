@@ -2,10 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import { Badge } from "@itech/shared";
+import OrderActions from "./order-actions";
 import {
   getOrder,
   getOrderTotal,
   getOrderItemUnitPrice,
+  getActiveCancellation,
+  getActiveReturn,
   type Order,
   type OrderStatus,
 } from "@/lib/api";
@@ -158,9 +161,34 @@ export default async function OrderDetailPage({
               </p>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <Badge tone={STATUS_TONE[order.status]}>
-                {STATUS_LABEL[order.status]}
-              </Badge>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Badge tone={STATUS_TONE[order.status]}>
+                  {STATUS_LABEL[order.status]}
+                </Badge>
+                {(() => {
+                  const activeCancellation = getActiveCancellation(order);
+                  const activeReturn = getActiveReturn(order);
+                  if (activeCancellation) {
+                    return (
+                      <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
+                        {activeCancellation.status === "APPROVED"
+                          ? "Đã duyệt hủy"
+                          : "Chờ hủy"}
+                      </span>
+                    );
+                  }
+                  if (activeReturn) {
+                    return (
+                      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600">
+                        {activeReturn.status === "APPROVED"
+                          ? "Đã duyệt hoàn"
+                          : "Chờ hoàn hàng"}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
               <span className="font-geist text-xl font-bold text-emerald-600">
                 {formatVND(total)}
               </span>
@@ -304,6 +332,12 @@ export default async function OrderDetailPage({
             </span>
           </div>
         </div>
+        <OrderActions
+          orderId={order.id}
+          status={order.status}
+          existingCancellation={getActiveCancellation(order)}
+          existingReturn={getActiveReturn(order)}
+        />
       </div>
     </div>
   );
