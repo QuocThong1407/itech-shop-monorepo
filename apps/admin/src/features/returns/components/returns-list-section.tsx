@@ -1,6 +1,15 @@
 "use client";
 
-import { EmptyState } from "@itech/shared";
+import {
+  Button,
+  EmptyState,
+  FilterToolbar,
+  SearchInput,
+  StatusSelect,
+  TableCard,
+  TableShell,
+  TabPills,
+} from "@itech/shared";
 import { PAGE_SIZE, tabs } from "../constants";
 import {
   formatDateTime,
@@ -47,53 +56,47 @@ export default function ReturnsListSection({
   onNextPage,
 }: ReturnsListSectionProps) {
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+    <TableCard className="rounded-[2rem] shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
       <div className="border-b border-slate-200 px-5 pb-3 pt-5">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const active = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => onTabChange(tab)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  active
-                    ? "bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.18)]"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {tab === "ALL" ? "All" : getStatusLabel(tab)}
-              </button>
-            );
-          })}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <TabPills
+            items={tabs.map((tab) => ({
+              key: tab,
+              label: tab === "ALL" ? "All" : getStatusLabel(tab),
+            }))}
+            activeKey={activeTab}
+            onChange={(key) => onTabChange(key as (typeof tabs)[number])}
+            className="justify-start"
+            activeClassName="!bg-sky-600 !text-white !shadow-none"
+            inactiveClassName="!border !border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-50"
+          />
 
-          <button
+          <Button
             type="button"
             onClick={onRefresh}
-            className="ml-auto inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={loading || actionLoading}
+            variant="primary"
+            className="!border !border-slate-900 !shadow-none"
           >
             {loading ? "Loading..." : "Refresh"}
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
-        <input
+      <FilterToolbar>
+        <SearchInput
           value={searchText}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search request id, order, customer, reason, product..."
-          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100 lg:max-w-md"
+          className="!w-full !max-w-md !bg-white !focus:border-sky-300 !focus:ring-sky-100"
         />
         <div className="text-sm text-slate-500">
           Showing <span className="font-semibold text-slate-900">{filteredRecordsLength}</span>{" "}
           requests
         </div>
-      </div>
+      </FilterToolbar>
 
-      <div className="px-5 pb-5">
-        <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
+      <TableShell innerClassName="overflow-hidden rounded-[1.5rem] border border-slate-200">
           <table className="w-full table-fixed divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr className="text-left text-xs uppercase tracking-[0.18em] text-slate-500">
@@ -156,29 +159,30 @@ export default function ReturnsListSection({
                         {formatMoney(record.Order?.Payment?.[0]?.amount || 0)}
                       </td>
                       <td className="px-4 py-4">
-                        <select
+                        <StatusSelect
                           value={normalizeStatus(record.status)}
                           disabled={actionLoading || finalStatus}
                           onChange={(event) => onStatusChange(record, event.target.value)}
-                          className={`h-10 w-full rounded-2xl border px-3 text-sm font-semibold outline-none transition ${getStatusSelectClass(
-                            record.status,
-                          )}`}
-                        >
-                          <option value="REQUESTED">Requested</option>
-                          <option value="APPROVED">Approved</option>
-                          <option value="COMPLETED">Completed</option>
-                          <option value="REJECTED">Rejected</option>
-                        </select>
+                          options={[
+                            { value: "REQUESTED", label: "Requested" },
+                            { value: "APPROVED", label: "Approved" },
+                            { value: "COMPLETED", label: "Completed" },
+                            { value: "REJECTED", label: "Rejected" },
+                          ]}
+                          toneClassName={getStatusSelectClass(record.status)}
+                          className="!h-10 !w-full !rounded-2xl !px-3 !py-2 !font-semibold"
+                        />
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex flex-nowrap gap-2 whitespace-nowrap">
-                          <button
-                            type="button"
+                          <Button
                             onClick={() => onView(record)}
-                            className="inline-flex h-10 items-center justify-center rounded-2xl border border-sky-200 bg-white px-3 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
+                            size="sm"
+                            variant="secondary"
+                            className="rounded-full border-slate-200 px-3 py-2 text-xs shadow-none"
                           >
                             View
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -187,33 +191,37 @@ export default function ReturnsListSection({
               )}
             </tbody>
           </table>
-        </div>
+      </TableShell>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">
-            Showing {filteredRecordsLength === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{" "}
-            {Math.min(page * PAGE_SIZE, filteredRecordsLength)} of {filteredRecordsLength}
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onPrevPage}
-              disabled={page === 1}
-              className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={onNextPage}
-              disabled={page >= totalPages}
-              className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+      <div className="mt-4 flex items-center justify-between gap-3 px-5 pb-5">
+        <p className="text-sm text-slate-500">
+          Showing {filteredRecordsLength === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{" "}
+          {Math.min(page * PAGE_SIZE, filteredRecordsLength)} of {filteredRecordsLength}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            onClick={onPrevPage}
+            disabled={page === 1}
+            size="md"
+            variant="secondary"
+            className="!rounded-full !shadow-none"
+          >
+            Previous
+          </Button>
+          <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
+            Page {page} of {totalPages || 1}
+          </span>
+          <Button
+            onClick={onNextPage}
+            disabled={page >= totalPages}
+            size="md"
+            variant="secondary"
+            className="!rounded-full !shadow-none"
+          >
+            Next
+          </Button>
         </div>
       </div>
-    </section>
+    </TableCard>
   );
 }

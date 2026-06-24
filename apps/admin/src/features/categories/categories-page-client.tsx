@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfirmDialog, StatCard } from "@itech/shared";
+import { AlertBanner, ConfirmDialog, MetricsGrid, PageIntro, StatCard } from "@itech/shared";
 import CategoriesListSection from "./components/categories-list-section";
 import CategoryFormModal from "./components/category-form-modal";
 import CategoryViewModal from "./components/category-view-modal";
@@ -13,31 +13,16 @@ export default function CategoriesPageClient() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.06)]">
-        <div className="px-6 py-6 xl:px-8 xl:py-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-[#008ECC] ring-1 ring-sky-200">
-              Category management
-            </span>
-            <span className="text-sm text-slate-500">
-              Manage catalog structure and product grouping
-            </span>
-          </div>
+      <PageIntro
+        eyebrow="Category management"
+        title="Organize product categories with a cleaner, more visual admin workflow."
+        description="Manage catalog structure, highlight product-heavy groups, and review category details with a more consistent admin experience."
+        className="bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.06)]"
+        titleClassName="sm:text-4xl"
+        actions={<span className="text-sm text-slate-500">Manage catalog structure and product grouping</span>}
+      />
 
-          <div className="mt-4 max-w-3xl space-y-4">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Organize product categories with a cleaner, more visual admin workflow.
-            </h2>
-            <p className="text-base leading-7 text-slate-600">
-              This screen keeps the old category management idea, but redesigns it with better
-              spacing, clearer emphasis on product counts, and a dedicated detail view for the
-              products inside each category.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <MetricsGrid className="sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total categories"
           value={state.stats.total.toLocaleString("vi-VN")}
@@ -62,14 +47,17 @@ export default function CategoriesPageClient() {
           note="Matches the current search query"
           accentClassName="bg-rose-500"
         />
-      </section>
+      </MetricsGrid>
+
+      {state.error ? (
+        <AlertBanner tone="danger" message={state.error} className="rounded-[1.5rem]" />
+      ) : null}
 
       <CategoriesListSection
         search={state.search}
         onSearchChange={actions.setSearch}
         onSubmitSearch={() => actions.setQuery(state.search)}
         onOpenAdd={actions.openAdd}
-        error={state.error}
         loading={state.loading}
         categories={state.categories}
         pagination={state.pagination}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ModalShell } from "@itech/shared";
+import { Button, DetailSection, KeyValueGrid, ModalShell, StatusBadge } from "@itech/shared";
 import { formatDateTime, getUsageProgress, normalizeStatus, statusMeta } from "../helpers";
 import type { CouponRecord } from "../types";
 
@@ -42,40 +42,31 @@ export default function CouponViewModal({
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Promotion
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {selectedCoupon.Promotion?.name || "No promotion"}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Discount
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {selectedCoupon.discountPercentage}% off
-                </p>
-              </div>
-            </div>
+            <KeyValueGrid
+              items={[
+                {
+                  label: "Promotion",
+                  value: selectedCoupon.Promotion?.name || "No promotion",
+                },
+                {
+                  label: "Discount",
+                  value: `${selectedCoupon.discountPercentage}% off`,
+                },
+              ]}
+              columnsClassName="grid gap-4 sm:grid-cols-2"
+            />
 
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Valid period
-              </p>
+            <DetailSection title="Valid period" className="shadow-sm">
               <p className="mt-2 text-sm font-semibold text-slate-950">
                 {selectedCoupon.Promotion
                   ? `${formatDateTime(selectedCoupon.Promotion.startDate)} - ${formatDateTime(selectedCoupon.Promotion.endDate)}`
                   : "No linked promotion"}
               </p>
-            </div>
+            </DetailSection>
           </div>
 
           <div className="space-y-5 bg-slate-50 p-6">
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Usage progress</p>
+            <DetailSection title="Usage progress" className="shadow-sm">
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between text-sm text-slate-600">
                   <span>{selectedCoupon.usageCount} used</span>
@@ -88,52 +79,42 @@ export default function CouponViewModal({
                   />
                 </div>
               </div>
-            </div>
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Linked promotion status</p>
+            <DetailSection title="Linked promotion status" className="shadow-sm">
               <div className="mt-4 flex flex-wrap gap-2">
                 {selectedCoupon.Promotion ? (
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
-                      statusMeta[normalizeStatus(selectedCoupon.Promotion.status)].tone
-                    }`}
+                  <StatusBadge
+                    className={statusMeta[normalizeStatus(selectedCoupon.Promotion.status)].tone}
+                    dotClassName={statusMeta[normalizeStatus(selectedCoupon.Promotion.status)].chip}
+                    withDot
                   >
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        statusMeta[normalizeStatus(selectedCoupon.Promotion.status)].chip
-                      }`}
-                    />
                     {statusMeta[normalizeStatus(selectedCoupon.Promotion.status)].label}
-                  </span>
+                  </StatusBadge>
                 ) : (
                   <span className="text-sm text-slate-500">No promotion attached.</span>
                 )}
               </div>
-            </div>
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Quick details</p>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                  <span>Created from coupon id</span>
-                  <span className="font-medium text-slate-900">{selectedCoupon.id}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                  <span>Promotion id</span>
-                  <span className="font-medium text-slate-900">{selectedCoupon.promotionId}</span>
-                </div>
-              </div>
-            </div>
+            <DetailSection title="Quick details" className="shadow-sm">
+              <KeyValueGrid
+                items={[
+                  { label: "Coupon id", value: selectedCoupon.id },
+                  { label: "Promotion id", value: selectedCoupon.promotionId },
+                ]}
+                columnsClassName="grid gap-3"
+              />
+            </DetailSection>
 
             <div className="flex justify-end gap-3">
-              <button
-                type="button"
+              <Button
                 onClick={() => onEdit(selectedCoupon)}
-                className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                variant="secondary"
+                className="!shadow-none"
               >
                 Edit coupon
-              </button>
+              </Button>
             </div>
           </div>
         </div>

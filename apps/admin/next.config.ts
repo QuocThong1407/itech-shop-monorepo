@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
   basePath: '/admin',
   reactStrictMode: true,
   transpilePackages: ["@itech/shared"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

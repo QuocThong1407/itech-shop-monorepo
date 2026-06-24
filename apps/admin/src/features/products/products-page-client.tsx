@@ -1,6 +1,12 @@
 "use client";
 
-import { ConfirmDialog, StatCard } from "@itech/shared";
+import {
+  AlertBanner,
+  ConfirmDialog,
+  MetricsGrid,
+  PageIntro,
+  StatCard,
+} from "@itech/shared";
 import ProductFormModal from "./components/product-form-modal";
 import ProductImportModal from "./components/product-import-modal";
 import ProductListSection from "./components/product-list-section";
@@ -12,30 +18,19 @@ export default function ProductsPageClient() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
-              Catalog engine
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              Products
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Manage inventory, pricing, category assignment, seller assignment,
-              and product media with real backend data.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Catalog engine"
+        title="Products"
+        description="Manage inventory, pricing, category assignment, seller assignment, and product media with real backend data."
+        className="bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.06)]"
+        titleClassName="sm:text-4xl"
+      />
 
       {state.error ? (
-        <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
-          {state.error}
-        </div>
+        <AlertBanner tone="danger" message={state.error} className="rounded-[1.5rem]" />
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <MetricsGrid className="xl:grid-cols-4">
         <StatCard
           title="Total products"
           value={state.stats.total.toLocaleString("vi-VN")}
@@ -60,7 +55,7 @@ export default function ProductsPageClient() {
           note="Currently unavailable items"
           accentClassName="bg-rose-500"
         />
-      </section>
+      </MetricsGrid>
 
       <ProductListSection
         searchInput={state.searchInput}

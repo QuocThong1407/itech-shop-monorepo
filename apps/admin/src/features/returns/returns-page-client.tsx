@@ -1,78 +1,68 @@
 "use client";
 
+import { AlertBanner, MetricsGrid, PageIntro, StatCard } from "@itech/shared";
 import ReturnsListSection from "./components/returns-list-section";
 import ReturnDetailModal from "./components/return-detail-modal";
 import { useReturnsPage } from "./hooks/use-returns-page";
-
-function StatCard({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: number;
-  className: string;
-}) {
-  return (
-    <article
-      className={`rounded-[1.75rem] border p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] ${className}`}
-    >
-      <p className="text-xs uppercase tracking-[0.2em] opacity-70">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
-    </article>
-  );
-}
 
 export default function ReturnsPageClient() {
   const { state, actions } = useReturnsPage();
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-        <div className="space-y-3">
-          <div className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#008ECC]">
-            Admin returns
-          </div>
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900">
-              Return Request Queue
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Inspect, approve, complete, or reject customer returns across the entire marketplace.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Admin returns"
+        title="Return Request Queue"
+        description="Inspect, approve, complete, or reject customer returns across the entire marketplace."
+        className="bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
+        titleClassName="sm:text-4xl"
+      />
 
       {state.error ? (
-        <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {state.error}
-        </div>
+        <AlertBanner tone="danger" message={state.error} className="rounded-[1.5rem]" />
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Total" value={state.stats.total} className="border-slate-200 bg-white" />
+      <MetricsGrid className="xl:grid-cols-5">
         <StatCard
-          label="Requested"
+          title="Total"
+          value={state.stats.total}
+          className="border-slate-200 bg-white"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-slate-500"
+          accentClassName="bg-slate-400"
+        />
+        <StatCard
+          title="Requested"
           value={state.stats.requested}
           className="border-amber-100 bg-amber-50 text-amber-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-amber-700/80"
+          valueClassName="!text-amber-700"
+          accentClassName="bg-amber-500"
         />
         <StatCard
-          label="Approved"
+          title="Approved"
           value={state.stats.approved}
           className="border-sky-100 bg-sky-50 text-sky-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-sky-700/80"
+          valueClassName="!text-sky-700"
+          accentClassName="bg-sky-500"
         />
         <StatCard
-          label="Completed"
+          title="Completed"
           value={state.stats.completed}
           className="border-emerald-100 bg-emerald-50 text-emerald-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-emerald-700/80"
+          valueClassName="!text-emerald-700"
+          accentClassName="bg-emerald-500"
         />
         <StatCard
-          label="Rejected"
+          title="Rejected"
           value={state.stats.rejected}
           className="border-rose-100 bg-rose-50 text-rose-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-rose-700/80"
+          valueClassName="!text-rose-700"
+          accentClassName="bg-rose-500"
         />
-      </section>
+      </MetricsGrid>
 
       <ReturnsListSection
         loading={state.loading}

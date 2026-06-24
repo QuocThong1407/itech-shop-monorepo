@@ -1,6 +1,14 @@
 "use client";
 
-import { EmptyState, ModalShell } from "@itech/shared";
+import {
+  Button,
+  DetailSection,
+  EmptyState,
+  FormField,
+  ModalShell,
+  SelectInput,
+  TextInput,
+} from "@itech/shared";
 import TinyMCEEditor from "../../../components/tinymce-editor";
 import { htmlToPlainText, variantAttributesLabel } from "../helpers";
 import type {
@@ -74,9 +82,8 @@ export default function ProductFormModal({
       <div className="grid gap-0 lg:grid-cols-[1fr_0.9fr]">
         <div className="space-y-5 p-6 lg:border-r lg:border-slate-200">
           <div className="grid gap-5 md:grid-cols-2">
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Product name</span>
-              <input
+            <FormField label="Product name" className="md:col-span-2">
+              <TextInput
                 value={draft.name}
                 onChange={(event) =>
                   onDraftChange((current) => ({
@@ -85,12 +92,10 @@ export default function ProductFormModal({
                   }))
                 }
                 placeholder="Classic Sneakers"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
               />
-            </label>
+            </FormField>
 
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-slate-700">Description</span>
+            <FormField label="Description" className="md:col-span-2">
               <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
                 <TinyMCEEditor
                   value={draft.description}
@@ -103,11 +108,10 @@ export default function ProductFormModal({
                   }
                 />
               </div>
-            </label>
+            </FormField>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Price</span>
-              <input
+            <FormField label="Price">
+              <TextInput
                 type="number"
                 min={0}
                 value={draft.price}
@@ -118,13 +122,11 @@ export default function ProductFormModal({
                   }))
                 }
                 placeholder="120000"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
               />
-            </label>
+            </FormField>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Stock quantity</span>
-              <input
+            <FormField label="Stock quantity">
+              <TextInput
                 type="number"
                 min={0}
                 value={draft.stockQuantity}
@@ -136,13 +138,12 @@ export default function ProductFormModal({
                   }))
                 }
                 placeholder="50"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white disabled:cursor-not-allowed disabled:bg-slate-100"
+                className="disabled:cursor-not-allowed disabled:bg-slate-100"
               />
-            </label>
+            </FormField>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Category</span>
-              <select
+            <FormField label="Category">
+              <SelectInput
                 value={draft.categoryId}
                 onChange={(event) =>
                   onDraftChange((current) => ({
@@ -150,7 +151,6 @@ export default function ProductFormModal({
                     categoryId: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
               >
                 <option value="">Select category</option>
                 {categories.map((category) => (
@@ -158,12 +158,11 @@ export default function ProductFormModal({
                     {category.name}
                   </option>
                 ))}
-              </select>
-            </label>
+              </SelectInput>
+            </FormField>
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-700">Seller</span>
-              <select
+            <FormField label="Seller">
+              <SelectInput
                 value={draft.sellerUserId}
                 onChange={(event) =>
                   onDraftChange((current) => ({
@@ -172,7 +171,7 @@ export default function ProductFormModal({
                   }))
                 }
                 disabled={Boolean(editingId)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white disabled:cursor-not-allowed disabled:bg-slate-100"
+                className="disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">Select seller</option>
                 {sellers.map((seller) => (
@@ -180,21 +179,16 @@ export default function ProductFormModal({
                     {seller.username} - {seller.email}
                   </option>
                 ))}
-              </select>
-            </label>
+              </SelectInput>
+            </FormField>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Variants</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Build each variant as its own row with attributes, quantity,
-                  price adjustment, and an optional image.
-                </p>
-              </div>
-              <button
-                type="button"
+          <DetailSection
+            title="Variants"
+            description="Build each variant as its own row with attributes, quantity, price adjustment, and an optional image."
+            className="shadow-sm"
+            actions={
+              <Button
                 onClick={() =>
                   onDraftChange((current) => {
                     const nextUseVariants = !current.useVariants;
@@ -224,29 +218,32 @@ export default function ProductFormModal({
                     };
                   })
                 }
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                size="md"
+                variant={draft.useVariants ? "primary" : "secondary"}
+                className={
                   draft.useVariants
-                    ? "bg-slate-950 text-white"
-                    : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
+                    ? "!rounded-full !border !border-slate-900 !shadow-none"
+                    : "!rounded-full !shadow-none"
+                }
               >
                 {draft.useVariants ? "Enabled" : "Disabled"}
-              </button>
-            </div>
-
+              </Button>
+            }
+          >
             {draft.useVariants ? (
               <div className="mt-4 space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                     Variant rows
                   </p>
-                  <button
-                    type="button"
+                  <Button
                     onClick={onAddVariantRow}
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    size="sm"
+                    variant="secondary"
+                    className="rounded-full border-slate-200 px-4 py-2 text-xs shadow-none"
                   >
                     Add row
-                  </button>
+                  </Button>
                 </div>
 
                 {draft.variants.length > 0 ? (
@@ -265,13 +262,14 @@ export default function ProductFormModal({
                               "Add attributes like Size, Color, Material."}
                           </p>
                         </div>
-                        <button
-                          type="button"
+                        <Button
                           onClick={() => onRemoveVariantRow(row.id)}
-                          className="rounded-full border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full !border-rose-200 !bg-white !px-3 !py-2 !text-xs !text-rose-700 !shadow-none hover:!bg-rose-50"
                         >
                           Remove
-                        </button>
+                        </Button>
                       </div>
 
                       <div className="mt-4 space-y-3">
@@ -280,7 +278,7 @@ export default function ProductFormModal({
                             key={attribute.id}
                             className="grid gap-3 md:grid-cols-[1fr_1fr_auto]"
                           >
-                            <input
+                            <TextInput
                               value={attribute.key}
                               onChange={(event) =>
                                 onUpdateVariantAttribute(
@@ -291,9 +289,9 @@ export default function ProductFormModal({
                                 )
                               }
                               placeholder="Attribute name"
-                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                              className="!bg-white"
                             />
-                            <input
+                            <TextInput
                               value={attribute.value}
                               onChange={(event) =>
                                 onUpdateVariantAttribute(
@@ -304,34 +302,35 @@ export default function ProductFormModal({
                                 )
                               }
                               placeholder="Attribute value"
-                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                              className="!bg-white"
                             />
-                            <button
-                              type="button"
+                            <Button
                               onClick={() =>
                                 onRemoveVariantAttribute(row.id, attribute.id)
                               }
-                              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                              variant="secondary"
+                              className="rounded-2xl px-4 py-3 text-xs font-semibold text-slate-600 shadow-none"
                             >
                               Remove
-                            </button>
+                            </Button>
                           </div>
                         ))}
-                        <button
-                          type="button"
+                        <Button
                           onClick={() => onAddVariantAttribute(row.id)}
-                          className="rounded-full border border-dashed border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full !border-dashed !border-slate-300 !bg-white !px-4 !py-2 !text-xs !text-slate-600 !shadow-none hover:!bg-slate-50"
                         >
                           Add attribute
-                        </button>
+                        </Button>
                       </div>
 
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
-                        <label className="space-y-2">
-                          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                            Quantity
-                          </span>
-                          <input
+                        <FormField
+                          label="Quantity"
+                          labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+                        >
+                          <TextInput
                             type="number"
                             min={0}
                             value={row.quantity}
@@ -342,15 +341,15 @@ export default function ProductFormModal({
                               }))
                             }
                             placeholder="10"
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                            className="!bg-white"
                           />
-                        </label>
+                        </FormField>
 
-                        <label className="space-y-2">
-                          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                            Price adjustment
-                          </span>
-                          <input
+                        <FormField
+                          label="Price adjustment"
+                          labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+                        >
+                          <TextInput
                             type="number"
                             value={row.priceAdjustment}
                             onChange={(event) =>
@@ -360,9 +359,9 @@ export default function ProductFormModal({
                               }))
                             }
                             placeholder="0"
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+                            className="!bg-white"
                           />
-                        </label>
+                        </FormField>
                       </div>
 
                       <div className="mt-4">
@@ -399,13 +398,14 @@ export default function ProductFormModal({
                             )}
                           </label>
                           {row.imagePreview ? (
-                            <button
-                              type="button"
+                            <Button
                               onClick={() => onSetVariantImage(row.id, null)}
-                              className="text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+                              size="sm"
+                              variant="ghost"
+                              className="!h-auto !rounded-full !px-0 !py-0 !text-xs !font-semibold !text-slate-500 hover:!bg-transparent hover:!text-slate-900"
                             >
                               Clear image
-                            </button>
+                            </Button>
                           ) : null}
                         </div>
                       </div>
@@ -426,16 +426,15 @@ export default function ProductFormModal({
                 className="mt-4 py-6"
               />
             )}
-          </div>
+          </DetailSection>
         </div>
 
         <div className="space-y-5 bg-slate-50 p-6">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Images</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Upload one or more product images. New uploads replace the current
-              gallery on edit.
-            </p>
+          <DetailSection
+            title="Images"
+            description="Upload one or more product images. New uploads replace the current gallery on edit."
+            className="shadow-sm"
+          >
             <label className="mt-4 block cursor-pointer rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-4 transition hover:bg-slate-100">
               <input
                 type="file"
@@ -482,10 +481,9 @@ export default function ProductFormModal({
                 <EmptyState title="No new images selected yet." className="col-span-full py-6" />
               )}
             </div>
-          </div>
+          </DetailSection>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Draft preview</p>
+          <DetailSection title="Draft preview" className="shadow-sm">
             <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50">
               <div className="aspect-[16/9] bg-slate-100">
                 {draft.previews[0] ? (
@@ -518,28 +516,24 @@ export default function ProductFormModal({
                 </div>
               </div>
             </div>
-          </div>
+          </DetailSection>
 
           <div className="flex flex-wrap justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
+            <Button onClick={onClose} variant="secondary" className="!shadow-none">
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={onSubmit}
               disabled={saving}
-              className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="primary"
+              className="!border !border-slate-900 !shadow-none"
             >
               {saving
                 ? "Saving..."
                 : modalMode === "add"
                   ? "Create product"
                   : "Save changes"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
