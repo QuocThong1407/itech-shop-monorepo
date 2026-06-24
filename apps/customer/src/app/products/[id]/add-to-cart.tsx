@@ -125,7 +125,7 @@ export default function AddToCart({
   const handleAddToCart = async () => {
     // Chặn nếu chưa đăng nhập
     if (!isLoggedIn) {
-      showToast("error", "Vui lòng đăng nhập để thêm vào giỏ hàng.");
+      window.dispatchEvent(new CustomEvent("auth:required"));
       return;
     }
     if (!matchedVariant) return;

@@ -7,9 +7,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LogoutButton } from "@itech/shared";
 import logo from "@itech/shared/assets/logo.png";
 
-const HOST_APP_URL =
-  process.env.NEXT_PUBLIC_HOST_APP_URL ?? "http://localhost:3000";
-
 interface CustomerShellProps {
   children: React.ReactNode;
   cartCount?: number;
@@ -35,6 +32,9 @@ export function CustomerShell({
   const [search, setSearch] = useState("");
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
+  const HOST_APP_URL =
+    process.env.NEXT_PUBLIC_HOST_APP_URL ?? "http://localhost:3000";
+  const [showAuthModal, setShowAuthModal] = useState(false);
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -51,6 +51,15 @@ export function CustomerShell({
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    function handleAuthRequired() {
+      setShowAuthModal(true);
+    }
+    window.addEventListener("auth:required", handleAuthRequired);
+    return () =>
+      window.removeEventListener("auth:required", handleAuthRequired);
+  }, []);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -168,8 +177,8 @@ export function CustomerShell({
                   <span className="hidden sm:block text-xs">Giỏ hàng</span>
                 </Link>
               ) : (
-                <a
-                  href={`${HOST_APP_URL}/login`}
+                <button
+                  onClick={() => setShowAuthModal(true)}
                   className="relative flex items-center gap-1.5 text-sm text-zinc-600 hover:text-blue-600 transition"
                   aria-label="Giỏ hàng"
                 >
@@ -190,28 +199,33 @@ export function CustomerShell({
                     </svg>
                   </div>
                   <span className="hidden sm:block text-xs">Giỏ hàng</span>
-                </a>
+                </button>
               )}
               {/* User + logout — desktop */}
               <div className="hidden md:flex items-center gap-2 border-l border-zinc-200 pl-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-zinc-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.75}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                <span className="text-sm text-zinc-700 font-medium">
-                  {userName ?? "Khách"}
-                </span>
-                <LogoutButton redirectTo={`${HOST_APP_URL}/login`} />
+                {userName ? (
+                  <>
+                    <svg>...</svg>
+                    <span>{userName}</span>
+                    <LogoutButton redirectTo={`${HOST_APP_URL}/login`} />
+                  </>
+                ) : (
+                  <>
+                    <a
+                      href={`${HOST_APP_URL}/login`}
+                      className="text-sm font-medium text-zinc-700 hover:text-blue-600 transition"
+                    >
+                      Đăng nhập
+                    </a>
+                    <span className="text-zinc-300">|</span>
+                    <a
+                      href={`${HOST_APP_URL}/register`}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 transition"
+                    >
+                      Đăng ký
+                    </a>
+                  </>
+                )}
               </div>
 
               {/* Hamburger mobile */}
@@ -296,19 +310,20 @@ export function CustomerShell({
               ))}
 
               <div className="ml-auto flex items-center gap-0.5">
-                {ACCOUNT_LINKS.map(({ href, label }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium transition ${
-                      pathname.startsWith(href)
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
+                {userName &&
+                  ACCOUNT_LINKS.map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium transition ${
+                        pathname.startsWith(href)
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                      }`}
+                    >
+                      {label}
+                    </Link>
+                  ))}
               </div>
             </nav>
           </div>
@@ -565,6 +580,87 @@ export function CustomerShell({
           className="h-14 w-14 rounded-full"
         />
       </a>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowAuthModal(false)}
+          />
+          {/* Modal */}
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white p-6 shadow-xl">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-blue-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-zinc-900">
+                  Đăng nhập để tiếp tục
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Vui lòng đăng nhập hoặc đăng ký để thêm vào giỏ hàng và mua
+                  sắm dễ dàng hơn.
+                </p>
+              </div>
+              <div className="flex w-full gap-3">
+                <a
+                  href={`${HOST_APP_URL}/register`}
+                  className="flex-1 rounded-xl border border-blue-600 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition text-center"
+                >
+                  Đăng ký
+                </a>
+                <a
+                  href={`${HOST_APP_URL}/login`}
+                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition text-center"
+                >
+                  Đăng nhập
+                </a>
+              </div>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="text-xs text-zinc-400 hover:text-zinc-600 transition"
+              >
+                Tiếp tục xem sản phẩm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
