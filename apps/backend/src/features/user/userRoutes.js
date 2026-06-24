@@ -8,8 +8,8 @@ const upload = require("../../middleware/upload");
 //current user
 router.get("/me", authenticate, userController.getMe);
 router.patch("/me", authenticate, userController.updateMe);
-router.get("/me/pfp", authenticate, userController.getPfp);
-router.post("/me/pfp", authenticate, upload.single("file"), userController.uploadPfp);
+router.get("/me/customer-profile", authenticate, userController.getCustomerProfile);
+router.patch("/me/customer-profile", authenticate, userController.updateCustomerProfile);
 
 //admin only
 router.use(authenticate, checkRole("ADMIN"));

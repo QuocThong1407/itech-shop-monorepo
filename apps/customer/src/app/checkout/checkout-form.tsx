@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CartItem, Address } from "@/lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Props {
   cartItems: CartItem[];
   cartTotal: number;
@@ -15,12 +13,6 @@ interface Props {
 interface CouponValidateResponse {
   discountAmount: number;
 }
-
-interface CreateOrderResponse {
-  orderId: string;
-}
-
-// ─── Constants / helpers ───────────────────────────────────────────────────────
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
@@ -42,18 +34,11 @@ async function parseErrorMessage(
 ): Promise<string> {
   try {
     const data = await res.json();
-    if (data?.code && COUPON_ERROR_MESSAGES[data.code]) {
+    if (data?.code && COUPON_ERROR_MESSAGES[data.code])
       return COUPON_ERROR_MESSAGES[data.code];
-    }
     if (typeof data?.message === "string") return data.message;
-  } catch {
-    // body không phải JSON — dùng fallback
-  }
+  } catch {}
   return fallback;
-}
-
-function addressLabel(addr: Address) {
-  return addr.phoneNumber;
 }
 
 function addressFull(addr: Address) {
@@ -62,14 +47,13 @@ function addressFull(addr: Address) {
     .join(", ");
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function CheckoutForm({
   cartItems,
   cartTotal,
   addresses,
 }: Props) {
   const router = useRouter();
+  const [step, setStep] = useState<1 | 2>(1);
 
   // Address
   const [selectedAddressId, setSelectedAddressId] = useState<string>(
@@ -91,15 +75,14 @@ export default function CheckoutForm({
   const [discount, setDiscount] = useState(0);
   const [validatedCoupon, setValidatedCoupon] = useState<string | null>(null);
 
+  // Payment
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
+
   // Submit
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // ─── Derived ────────────────────────────────────────────────────────────────
-
   const total = Math.max(0, cartTotal - discount);
-
-  // ─── Coupon ─────────────────────────────────────────────────────────────────
 
   async function handleValidateCoupon() {
     if (!couponCode.trim()) return;
@@ -107,7 +90,6 @@ export default function CheckoutForm({
     setCouponError(null);
     setDiscount(0);
     setValidatedCoupon(null);
-
     try {
       const res = await fetch(`${API_BASE}/coupons/validate`, {
         method: "POST",
@@ -118,14 +100,12 @@ export default function CheckoutForm({
           orderTotal: cartTotal,
         }),
       });
-
       if (!res.ok) {
         setCouponError(
           await parseErrorMessage(res, "Mã giảm giá không hợp lệ."),
         );
         return;
       }
-
       const data: CouponValidateResponse = await res.json();
       setDiscount(data.discountAmount ?? 0);
       setValidatedCoupon(couponCode.trim());
@@ -136,59 +116,52 @@ export default function CheckoutForm({
     }
   }
 
-  // ─── Submit ──────────────────────────────────────────────────────────────────
+  function handleContinue() {
+    if (selectedAddressId === "__new__") {
+      const { phoneNumber, address, district, province } = newAddress;
+      if (
+        !phoneNumber.trim() ||
+        !address.trim() ||
+        !district.trim() ||
+        !province.trim()
+      ) {
+        setSubmitError("Vui lòng điền đầy đủ thông tin địa chỉ giao hàng.");
+        return;
+      }
+    }
+    setSubmitError(null);
+    setStep(2);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError(null);
     setSubmitting(true);
-
     try {
       let addressId = selectedAddressId;
-
-      // Nếu user nhập địa chỉ mới → tạo trước, lấy id
       if (selectedAddressId === "__new__") {
-        const { phoneNumber, address, district, province } = newAddress;
-        if (
-          !phoneNumber.trim() ||
-          !address.trim() ||
-          !district.trim() ||
-          !province.trim()
-        ) {
-          setSubmitError("Vui lòng điền đầy đủ thông tin địa chỉ giao hàng.");
-          setSubmitting(false);
-          return;
-        }
-
         const addrRes = await fetch(`${API_BASE}/addresses`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newAddress),
         });
-
         if (!addrRes.ok) {
           setSubmitError(
             await parseErrorMessage(addrRes, "Không thể lưu địa chỉ."),
           );
           return;
         }
-
         const addrData = await addrRes.json();
-        addressId = addrData.id; // hoặc addrData.data?.id tuỳ response shape của BE
+        addressId = addrData.id ?? addrData.data?.id;
       }
 
-      // Đặt hàng với addressId đã có
       const res = await fetch(`${API_BASE}/orders`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          addressId,
-          // paymentMethod: "COD", // thêm nếu cần
-        }),
+        body: JSON.stringify({ addressId, paymentMethod }),
       });
-
       if (!res.ok) {
         setSubmitError(
           await parseErrorMessage(res, "Đặt hàng thất bại. Vui lòng thử lại."),
@@ -197,8 +170,6 @@ export default function CheckoutForm({
       }
 
       const data = await res.json();
-      // BE trả về order object trực tiếp (từ orderService.createOrder → getOrderById)
-      // nên id nằm ở data.id hoặc data.data?.id
       const orderId = data?.id ?? data?.data?.id;
 
       if (!orderId) {
@@ -206,7 +177,29 @@ export default function CheckoutForm({
         return;
       }
 
-      router.push(`/customer/orders/${orderId}`);
+      // If VNPay, create payment and redirect
+      if (paymentMethod === "VNPAY") {
+        const payRes = await fetch(`${API_BASE}/payments`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            method: "VNPAY",
+            returnUrl: `${window.location.origin}/payment/result`,
+          }),
+        });
+        if (payRes.ok) {
+          const payData = await payRes.json();
+          const paymentUrl = payData?.data?.paymentUrl ?? payData?.paymentUrl;
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+            return;
+          }
+        }
+      }
+
+      router.push(`/${orderId}/confirmation`);
       router.refresh();
     } catch {
       setSubmitError("Lỗi kết nối. Vui lòng thử lại.");
@@ -215,140 +208,345 @@ export default function CheckoutForm({
     }
   }
 
-  // ─── UI ──────────────────────────────────────────────────────────────────────
+  const selectedAddr = addresses.find((a) => a.id === selectedAddressId);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <fieldset disabled={submitting} className="contents">
-        {/* 1. Địa chỉ giao hàng */}
-        <section className="rounded-[1.5rem] border border-zinc-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-emerald-600">
-            Địa chỉ giao hàng
-          </h2>
+    <>
+      <style>{`
+        .cps-red { color: #e53935; }
+        .cps-bg-red { background: #e53935; }
+        .cps-bg-red:hover { background: #c62828; }
+        .cps-border-red { border-color: #e53935; }
+        .cps-step-active { color: #e53935; border-bottom: 2px solid #e53935; }
+        .cps-step-inactive { color: #9ca3af; border-bottom: 2px solid #e5e7eb; }
+        .cps-radio:checked { accent-color: #e53935; }
+        .cps-input:focus { outline: none; border-color: #e53935; box-shadow: 0 0 0 2px rgba(229,57,53,0.1); }
+        .cps-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+      `}</style>
 
-          <div className="flex flex-col gap-3">
-            {addresses.map((addr) => (
+      {/* Stepper */}
+      <div
+        style={{
+          display: "flex",
+          borderBottom: "1px solid #e5e7eb",
+          marginBottom: 16,
+          background: "#fff",
+          borderRadius: "8px 8px 0 0",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => step === 2 && setStep(1)}
+          style={{
+            flex: 1,
+            padding: "14px 0",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: step === 2 ? "pointer" : "default",
+            background: "none",
+            border: "none",
+          }}
+          className={step === 1 ? "cps-step-active" : "cps-step-inactive"}
+        >
+          1. THÔNG TIN
+        </button>
+        <button
+          type="button"
+          disabled
+          style={{
+            flex: 1,
+            padding: "14px 0",
+            fontSize: 14,
+            fontWeight: 600,
+            background: "none",
+            border: "none",
+            cursor: "default",
+          }}
+          className={step === 2 ? "cps-step-active" : "cps-step-inactive"}
+        >
+          2. THANH TOÁN
+        </button>
+      </div>
+
+      {/* ── STEP 1: Thông tin ── */}
+      {step === 1 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Cart items preview */}
+          <div className="cps-card" style={{ padding: 16 }}>
+            {cartItems.map((item) => {
+              const pv = item.ProductVariant;
+              const unitPrice = pv.Product.price + pv.priceAdjustment;
+              const img = pv.images?.[0] ?? pv.Product.images?.[0];
+              const variantLabel = pv.variantAttributes
+                ? Object.values(pv.variantAttributes).join(" | ")
+                : null;
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingBottom: 12,
+                    borderBottom: "1px solid #f3f4f6",
+                  }}
+                >
+                  {img && (
+                    <img
+                      src={img}
+                      alt={pv.Product.name}
+                      style={{
+                        width: 56,
+                        height: 56,
+                        objectFit: "cover",
+                        borderRadius: 6,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: "#111827",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {pv.Product.name}
+                    </div>
+                    {variantLabel && (
+                      <div
+                        style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}
+                      >
+                        {variantLabel}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginTop: 4,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "#6b7280" }}>
+                        Số lượng: {item.quantity}
+                      </span>
+                      <span
+                        style={{ fontSize: 14, fontWeight: 600 }}
+                        className="cps-red"
+                      >
+                        {fmt(unitPrice * item.quantity)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Customer info */}
+          <div className="cps-card" style={{ padding: 16 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                marginBottom: 14,
+              }}
+              className="cps-red"
+            >
+              Thông tin nhận hàng
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {addresses.map((addr) => (
+                <label
+                  key={addr.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    padding: "10px 12px",
+                    border: `1.5px solid ${selectedAddressId === addr.id ? "#e53935" : "#e5e7eb"}`,
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    background:
+                      selectedAddressId === addr.id ? "#fff5f5" : "#fff",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="addr"
+                    value={addr.id}
+                    checked={selectedAddressId === addr.id}
+                    onChange={() => setSelectedAddressId(addr.id)}
+                    className="cps-radio"
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#111827",
+                      }}
+                    >
+                      {addr.phoneNumber}
+                    </div>
+                    <div
+                      style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}
+                    >
+                      {addressFull(addr)}
+                    </div>
+                  </div>
+                </label>
+              ))}
               <label
-                key={addr.id}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors ${
-                  selectedAddressId === addr.id
-                    ? "border-emerald-400 bg-emerald-50"
-                    : "border-zinc-200 hover:border-emerald-200"
-                }`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  border: `1.5px solid ${selectedAddressId === "__new__" ? "#e53935" : "#e5e7eb"}`,
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  background:
+                    selectedAddressId === "__new__" ? "#fff5f5" : "#fff",
+                }}
               >
                 <input
                   type="radio"
-                  name="addressId"
-                  value={addr.id}
-                  checked={selectedAddressId === addr.id}
-                  onChange={() => setSelectedAddressId(addr.id)}
-                  className="mt-0.5 accent-emerald-500"
+                  name="addr"
+                  value="__new__"
+                  checked={selectedAddressId === "__new__"}
+                  onChange={() => setSelectedAddressId("__new__")}
+                  className="cps-radio"
+                  style={{ flexShrink: 0 }}
                 />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium text-zinc-800">
-                    {addressLabel(addr)}
-                  </span>
-                  <span className="text-xs text-zinc-500">
-                    {addressFull(addr)}
-                  </span>
+                <span
+                  style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}
+                >
+                  Giao hàng đến địa chỉ mới
                 </span>
               </label>
-            ))}
 
+              {selectedAddressId === "__new__" && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 8,
+                    paddingTop: 4,
+                  }}
+                >
+                  {[
+                    { key: "phoneNumber", placeholder: "Số điện thoại *" },
+                    { key: "address", placeholder: "Số nhà, tên đường *" },
+                    { key: "street", placeholder: "Đường/Phố" },
+                    { key: "ward", placeholder: "Phường/Xã" },
+                    { key: "district", placeholder: "Quận/Huyện *" },
+                    { key: "province", placeholder: "Tỉnh/Thành phố *" },
+                  ].map(({ key, placeholder }) => (
+                    <input
+                      key={key}
+                      type="text"
+                      placeholder={placeholder}
+                      value={newAddress[key as keyof typeof newAddress]}
+                      onChange={(e) =>
+                        setNewAddress({ ...newAddress, [key]: e.target.value })
+                      }
+                      className="cps-input"
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: 13,
+                        border: "1.5px solid #e5e7eb",
+                        borderRadius: 6,
+                        color: "#111827",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quý khách có muốn xuất hóa đơn? (cosmetic only) */}
+          <div
+            className="cps-card"
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <span style={{ fontSize: 13, color: "#374151", flex: 1 }}>
+              Quý khách có muốn xuất hóa đơn công ty không?
+            </span>
             <label
-              className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors ${
-                selectedAddressId === "__new__"
-                  ? "border-emerald-400 bg-emerald-50"
-                  : "border-zinc-200 hover:border-emerald-200"
-              }`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
             >
               <input
                 type="radio"
-                name="addressId"
-                value="__new__"
-                checked={selectedAddressId === "__new__"}
-                onChange={() => setSelectedAddressId("__new__")}
-                className="mt-0.5 accent-emerald-500"
-              />
-              <span className="text-sm font-medium text-zinc-800">
-                Địa chỉ mới
-              </span>
+                name="invoice"
+                defaultChecked
+                style={{ accentColor: "#e53935" }}
+              />{" "}
+              Không
             </label>
-
-            {selectedAddressId === "__new__" && (
-              <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input
-                  type="tel"
-                  placeholder="Số điện thoại"
-                  value={newAddress.phoneNumber}
-                  onChange={(e) =>
-                    setNewAddress({
-                      ...newAddress,
-                      phoneNumber: e.target.value,
-                    })
-                  }
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-                <input
-                  type="text"
-                  placeholder="Số nhà, tên đường"
-                  value={newAddress.address}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, address: e.target.value })
-                  }
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-                <input
-                  type="text"
-                  placeholder="Đường/Phố"
-                  value={newAddress.street}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, street: e.target.value })
-                  }
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-                <input
-                  type="text"
-                  placeholder="Phường/Xã"
-                  value={newAddress.ward}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, ward: e.target.value })
-                  }
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-                <input
-                  type="text"
-                  placeholder="Quận/Huyện"
-                  value={newAddress.district}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, district: e.target.value })
-                  }
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-                <input
-                  type="text"
-                  placeholder="Tỉnh/Thành phố"
-                  value={newAddress.province}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, province: e.target.value })
-                  }
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                />
-              </div>
-            )}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="radio"
+                name="invoice"
+                style={{ accentColor: "#e53935" }}
+              />{" "}
+              Có
+            </label>
           </div>
-        </section>
 
-        {/* 2. Mã giảm giá */}
-        <section className="rounded-[1.5rem] border border-zinc-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-emerald-600">
-            Mã giảm giá
-          </h2>
+          {submitError && (
+            <div
+              style={{
+                padding: "10px 14px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 6,
+                fontSize: 13,
+                color: "#dc2626",
+              }}
+            >
+              {submitError}
+            </div>
+          )}
+        </div>
+      )}
 
-          <div className="flex gap-2">
+      {/* ── STEP 2: Thanh toán ── */}
+      {step === 2 && (
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: 12 }}
+        >
+          {/* Coupon */}
+          <div className="cps-card" style={{ padding: 16 }}>
             <input
               type="text"
-              placeholder="Nhập mã coupon..."
+              placeholder="Nhập mã giảm giá (chỉ áp dụng 1 lần)"
               value={couponCode}
               onChange={(e) => {
                 setCouponCode(e.target.value);
@@ -364,107 +562,343 @@ export default function CheckoutForm({
                   handleValidateCoupon();
                 }
               }}
-              className="flex-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              className="cps-input"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: 13,
+                border: "1.5px solid #e5e7eb",
+                borderRadius: 6,
+                boxSizing: "border-box",
+                color: "#111827",
+              }}
             />
-            <button
-              type="button"
-              onClick={handleValidateCoupon}
-              disabled={couponLoading || !couponCode.trim()}
-              className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-50"
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: 8,
+              }}
             >
-              {couponLoading ? "Đang kiểm tra..." : "Áp dụng"}
-            </button>
+              <button
+                type="button"
+                onClick={handleValidateCoupon}
+                disabled={couponLoading || !couponCode.trim()}
+                className="cps-bg-red"
+                style={{
+                  padding: "8px 20px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  opacity: !couponCode.trim() || couponLoading ? 0.5 : 1,
+                  transition: "background 0.2s",
+                }}
+              >
+                {couponLoading ? "Đang kiểm tra..." : "Áp dụng"}
+              </button>
+            </div>
+            {couponError && (
+              <p style={{ marginTop: 6, fontSize: 12, color: "#dc2626" }}>
+                {couponError}
+              </p>
+            )}
+            {validatedCoupon && discount > 0 && (
+              <p style={{ marginTop: 6, fontSize: 12, color: "#16a34a" }}>
+                ✓ Mã <b>{validatedCoupon}</b> hợp lệ — giảm {fmt(discount)}
+              </p>
+            )}
           </div>
 
-          {couponError && (
-            <p className="mt-2 text-xs text-red-500">{couponError}</p>
-          )}
-          {validatedCoupon && discount > 0 && (
-            <p className="mt-2 text-xs text-emerald-600">
-              ✓ Mã <span className="font-semibold">{validatedCoupon}</span> hợp
-              lệ — giảm {fmt(discount)}
-            </p>
-          )}
-        </section>
-
-        {/* 3. Tóm tắt đơn hàng */}
-        <section className="rounded-[1.5rem] border border-zinc-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-emerald-600">
-            Tóm tắt đơn hàng
-          </h2>
-
-          <ul className="flex flex-col gap-3">
-            {cartItems.map((item) => {
-              const pv = item.ProductVariant;
-              const unitPrice = pv.Product.price + pv.priceAdjustment;
-              const imageUrl = pv.images?.[0] ?? pv.Product.images?.[0];
-              const variantLabel = pv.variantAttributes
-                ? Object.values(pv.variantAttributes).join(" / ")
-                : null;
-
-              return (
-                <li
-                  key={item.id}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3">
-                    {imageUrl && (
-                      <img
-                        src={imageUrl}
-                        alt={pv.Product.name}
-                        className="h-10 w-10 rounded-lg object-cover"
-                      />
-                    )}
-                    <span className="text-sm text-zinc-700">
-                      {pv.Product.name}
-                      {variantLabel && (
-                        <span className="text-zinc-400"> ({variantLabel})</span>
-                      )}{" "}
-                      <span className="text-zinc-400">× {item.quantity}</span>
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium text-zinc-800">
-                    {fmt(unitPrice * item.quantity)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="mt-4 border-t border-zinc-100 pt-4">
-            <div className="flex justify-between text-sm text-zinc-500">
-              <span>Tạm tính</span>
-              <span>{fmt(cartTotal)}</span>
+          {/* Order summary */}
+          <div className="cps-card" style={{ padding: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+                color: "#6b7280",
+                paddingBottom: 8,
+              }}
+            >
+              <span>Số lượng sản phẩm</span>
+              <span style={{ fontWeight: 600, color: "#111827" }}>
+                {cartItems.reduce((s, i) => s + i.quantity, 0)}
+              </span>
             </div>
-
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+                color: "#6b7280",
+                paddingBottom: 8,
+              }}
+            >
+              <span>Tổng tiền hàng</span>
+              <span style={{ fontWeight: 600, color: "#111827" }}>
+                {fmt(cartTotal)}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13,
+                color: "#6b7280",
+                paddingBottom: 8,
+              }}
+            >
+              <span>Phí vận chuyển</span>
+              <span style={{ fontWeight: 600, color: "#111827" }}>
+                Miễn phí
+              </span>
+            </div>
             {discount > 0 && (
-              <div className="mt-1 flex justify-between text-sm text-emerald-600">
-                <span>Giảm giá</span>
-                <span>− {fmt(discount)}</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 13,
+                  paddingBottom: 8,
+                }}
+              >
+                <span style={{ color: "#6b7280" }}>Giảm giá trực tiếp</span>
+                <span style={{ fontWeight: 600 }} className="cps-red">
+                  - {fmt(discount)}
+                </span>
               </div>
             )}
-
-            <div className="mt-3 flex justify-between text-base font-semibold text-zinc-800">
-              <span>Tổng cộng</span>
-              <span className="text-emerald-600">{fmt(total)}</span>
+            <div
+              style={{
+                borderTop: "1px solid #f3f4f6",
+                paddingTop: 10,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+              }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>
+                Tổng tiền
+              </span>
+              <span
+                style={{ fontSize: 18, fontWeight: 700 }}
+                className="cps-red"
+              >
+                {fmt(total)}
+              </span>
             </div>
+            <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+              Đã gồm VAT và được làm tròn
+            </p>
           </div>
-        </section>
-      </fieldset>
 
-      {submitError && (
-        <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {submitError}
-        </p>
+          {/* Payment method */}
+          <div className="cps-card" style={{ padding: 16 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                marginBottom: 14,
+              }}
+              className="cps-red"
+            >
+              Thông tin thanh toán
+            </div>
+            {(["COD", "VNPAY"] as const).map((method) => (
+              <label
+                key={method}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 14px",
+                  marginBottom: 8,
+                  border: `1.5px solid ${paymentMethod === method ? "#e53935" : "#e5e7eb"}`,
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  background: paymentMethod === method ? "#fff5f5" : "#fff",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value={method}
+                  checked={paymentMethod === method}
+                  onChange={() => setPaymentMethod(method)}
+                  className="cps-radio"
+                  style={{ flexShrink: 0 }}
+                />
+                <div>
+                  <div
+                    style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}
+                  >
+                    {method === "COD"
+                      ? "Thanh toán khi nhận hàng (COD)"
+                      : "Thanh toán qua VNPay"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                    {method === "COD"
+                      ? "Trả tiền mặt khi nhận hàng"
+                      : "Giảm thêm tới 1.000.000₫"}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {/* Delivery info summary */}
+          {selectedAddr && (
+            <div className="cps-card" style={{ padding: 16 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  marginBottom: 12,
+                }}
+                className="cps-red"
+              >
+                Thông tin nhận hàng
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "120px 1fr",
+                  gap: "6px 0",
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ color: "#6b7280" }}>Khách hàng</span>
+                <span style={{ color: "#111827", fontWeight: 500 }}>
+                  {selectedAddr.phoneNumber}
+                </span>
+                <span style={{ color: "#6b7280" }}>Nhận hàng tại</span>
+                <span style={{ color: "#111827" }}>
+                  {addressFull(selectedAddr)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {submitError && (
+            <div
+              style={{
+                padding: "10px 14px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: 6,
+                fontSize: 13,
+                color: "#dc2626",
+              }}
+            >
+              {submitError}
+            </div>
+          )}
+        </form>
       )}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded-[1.5rem] bg-emerald-500 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600 active:scale-[0.99] disabled:opacity-60"
+      {/* ── Sticky bottom bar ── */}
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          marginTop: 16,
+          background: "#fff",
+          borderTop: "1px solid #e5e7eb",
+          padding: "12px 0 0",
+        }}
       >
-        {submitting ? "Đang đặt hàng..." : "Đặt hàng"}
-      </button>
-    </form>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 10,
+          }}
+        >
+          <span style={{ fontSize: 14, color: "#374151" }}>
+            Tổng tiền tạm tính:
+          </span>
+          <span style={{ fontSize: 18, fontWeight: 700 }} className="cps-red">
+            {fmt(total)}
+          </span>
+        </div>
+
+        {step === 1 ? (
+          <button
+            type="button"
+            onClick={handleContinue}
+            className="cps-bg-red"
+            style={{
+              width: "100%",
+              padding: "13px 0",
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              letterSpacing: "0.02em",
+              transition: "background 0.2s",
+            }}
+          >
+            Tiếp tục
+          </button>
+        ) : (
+          <button
+            type="submit"
+            form=""
+            onClick={(e) => {
+              e.preventDefault();
+              const fakeE = { preventDefault: () => {} } as React.FormEvent;
+              handleSubmit(fakeE);
+            }}
+            disabled={submitting}
+            className="cps-bg-red"
+            style={{
+              width: "100%",
+              padding: "13px 0",
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              opacity: submitting ? 0.7 : 1,
+              letterSpacing: "0.02em",
+              transition: "background 0.2s",
+            }}
+          >
+            {submitting ? "Đang đặt hàng..." : "Thanh toán"}
+          </button>
+        )}
+
+        {step === 2 && (
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            style={{
+              width: "100%",
+              marginTop: 8,
+              padding: "8px 0",
+              fontSize: 13,
+              color: "#6b7280",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+            }}
+          >
+            ← Quay lại thông tin
+          </button>
+        )}
+      </div>
+    </>
   );
 }

@@ -315,3 +315,54 @@ export async function getActivePromotions(): Promise<Promotion[]> {
   const raw = body.data ?? body;
   return raw.promotions ?? [];
 }
+
+export interface MembershipTierInfo {
+  current: string;
+  spent: number;
+  nextTier: string | null;
+  spentToNextTier: number;
+  benefits: Record<string, unknown>;
+}
+
+export interface Membership {
+  id: string;
+  spent: number;
+  membership: string;
+  tierInfo: MembershipTierInfo;
+}
+
+export async function getMembership(): Promise<Membership> {
+  const token = await getAuthToken();
+  const client = getApiClient(token);
+  return unwrap<Membership>(client.get("/memberships/me"));
+}
+
+export interface CustomerProfile {
+  id: string;
+  image: string | null;
+  phone: string | null;
+  gender: string | null;
+  birthday: string | null;
+}
+
+export async function getCustomerProfile(): Promise<CustomerProfile> {
+  const token = await getAuthToken();
+  const client = getApiClient(token);
+  return unwrap<CustomerProfile>(client.get("/users/me/customer-profile"));
+}
+
+export async function updateCustomerProfile(input: {
+  phone?: string;
+  gender?: string;
+  birthday?: string;
+}): Promise<CustomerProfile> {
+  const token = await getAuthToken();
+  const client = getApiClient(token);
+  return unwrap<CustomerProfile>(client.patch("/users/me/customer-profile", input));
+}
+
+export async function updateAddress(id: string, input: Partial<CreateAddressInput>): Promise<Address> {
+  const token = await getAuthToken();
+  const client = getApiClient(token);
+  return unwrap<Address>(client.put(`/addresses/${id}`, input));
+}

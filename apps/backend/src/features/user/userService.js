@@ -286,51 +286,40 @@ const updateMe = async (userId, { username }) => {
   return data;
 };
 
-const getPfp = async (userId) => {
-  // Image is stored in Customer table, not User table
+const getCustomerProfile = async (userId) => {
   const { data: customer, error } = await supabase
     .from("Customer")
-    .select("image")
+    .select("id, image, phone, gender, birthday")
     .eq("userId", userId)
     .single();
 
-  if (error && error.code !== 'PGRST116') throw error; // Ignore not found error
-  return { image: customer?.image || null };
+  if (error && error.code !== 'PGRST116') throw error;
+  return customer ?? { image: null, phone: null, gender: null, birthday: null };
 };
 
-const uploadPfp = async (userId, file) => {
-  const { uploadImageToSupabase, deleteImageFromSupabase } = require("../../utils/uploadHelper");
-  
-  // Get customer record
-  const { data: customer, error: customerError } = await supabase
+const updateCustomerProfile = async (userId, { phone, gender, birthday }) => {
+  const { data: customer, error: findError } = await supabase
     .from("Customer")
-    .select("id, image")
+    .select("id")
     .eq("userId", userId)
     .single();
 
-  if (customerError) throw { status: 404, message: "Customer profile not found" };
+  if (findError) throw { status: 404, message: "Customer not found" };
 
-  // Delete old image if exists
-  if (customer?.image) {
-    await deleteImageFromSupabase(customer.image, "avatars");
-  }
+  const updateData = { updatedAt: new Date() };
+  if (phone !== undefined) updateData.phone = phone;
+  if (gender !== undefined) updateData.gender = gender;
+  if (birthday !== undefined) updateData.birthday = birthday;
 
-  // Upload new image
-  const imageUrl = await uploadImageToSupabase(file, "avatars", "pfp/");
-
-  // Update customer with new image URL
   const { data, error } = await supabase
     .from("Customer")
-    .update({
-      image: imageUrl,
-      updatedAt: new Date(),
-    })
+    .update(updateData)
     .eq("id", customer.id)
-    .select("image")
+    .select("id, image, phone, gender, birthday")
     .single();
 
   if (error) throw error;
-  return { image: data.image };
+  return data;
 };
 
 module.exports = {
@@ -341,6 +330,6 @@ module.exports = {
   deleteUser,
   getUserStats,
   updateMe,
-  getPfp,
-  uploadPfp,
+  getCustomerProfile,
+  updateCustomerProfile
 };

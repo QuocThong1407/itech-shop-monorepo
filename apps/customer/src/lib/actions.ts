@@ -32,3 +32,24 @@ export async function deleteAddressAction(id: string): Promise<void> {
   const client = await getClient();
   await unwrap<null>(client.del(`/addresses/${id}`));
 }
+
+export async function updateCustomerProfileAction(input: {
+  phone?: string;
+  gender?: string;
+  birthday?: string;
+}) {
+  const { updateCustomerProfile } = await import("./api");
+  return updateCustomerProfile(input);
+}
+
+export async function updateAddressAction(id: string, input: {
+  phoneNumber?: string;
+  address?: string;
+  street?: string;
+  ward?: string;
+  district?: string;
+  province?: string;
+}) {
+  const { updateAddress } = await import("./api");
+  return updateAddress(id, input);
+}
