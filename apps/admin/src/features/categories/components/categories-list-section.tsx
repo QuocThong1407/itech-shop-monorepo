@@ -1,6 +1,15 @@
 "use client";
 
-import { Badge, EmptyState } from "@itech/shared";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  FilterToolbar,
+  SearchInput,
+  TableCard,
+  TablePagination,
+  TableShell,
+} from "@itech/shared";
 import { formatCategoryDate } from "../helpers";
 import type { CategoryRecord, Pagination, RankedCategory } from "../types";
 
@@ -9,7 +18,6 @@ type CategoriesListSectionProps = {
   onSearchChange: (value: string) => void;
   onSubmitSearch: () => void;
   onOpenAdd: () => void;
-  error: string | null;
   loading: boolean;
   categories: CategoryRecord[];
   pagination: Pagination;
@@ -25,7 +33,6 @@ export default function CategoriesListSection({
   onSearchChange,
   onSubmitSearch,
   onOpenAdd,
-  error,
   loading,
   categories,
   pagination,
@@ -36,48 +43,44 @@ export default function CategoriesListSection({
   onPageChange,
 }: CategoriesListSectionProps) {
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.05)] sm:p-6">
-      <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+    <TableCard className="rounded-[2rem] shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
+      <div className="border-b border-slate-200 px-5 pb-4 pt-5">
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+          className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
           onSubmit={(event) => {
             event.preventDefault();
             onSubmitSearch();
           }}
         >
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search by category name"
-            className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 sm:w-80"
-          />
-          <button
-            type="submit"
-            className="h-11 rounded-2xl bg-[#008ECC] px-4 text-sm font-semibold text-white transition hover:bg-[#0075aa]"
-          >
-            Search
-          </button>
-        </form>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchInput
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Search by category name"
+              className="!w-full !w-xl !max-w-[22rem] !bg-white !focus:border-sky-300 !focus:ring-sky-100"
+            />
+            <Button type="submit" variant="secondary" className="!border-slate-200 !shadow-none">
+              Search
+            </Button>
+          </div>
 
-        <button
-          type="button"
-          onClick={onOpenAdd}
-          className="h-11 rounded-2xl border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
-        >
-          Add category
-        </button>
+          <Button onClick={onOpenAdd} variant="primary" className="!border !border-slate-900 !shadow-none">
+            Add category
+          </Button>
+        </form>
       </div>
 
-      {error ? (
-        <div className="mt-5 rounded-[1.25rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </div>
-      ) : null}
+      <FilterToolbar className="pb-4 pt-4">
+        <p className="text-sm text-slate-500">
+          Showing <span className="font-semibold text-slate-900">{categories.length}</span> of{" "}
+          <span className="font-semibold text-slate-900">{pagination.total}</span> categories
+        </p>
+      </FilterToolbar>
 
-      <div className="mt-5 overflow-x-auto">
-        <table className="min-w-full table-fixed border-separate border-spacing-y-3">
+      <TableShell className="pt-0" innerClassName="overflow-x-auto">
+        <table className="min-w-full table-fixed">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-[0.2em] text-slate-400">
+            <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-[0.2em] text-slate-400">
               <th className="w-[25%] px-4 py-2 font-medium">Category</th>
               <th className="w-[25%] px-4 py-2 font-medium">Description</th>
               <th className="w-[16%] px-4 py-2 font-medium">Created</th>
@@ -101,13 +104,13 @@ export default function CategoriesListSection({
                   />
                 </td>
               </tr>
-            ) : (
-              categories.map((category) => {
-                const rankInfo = topCategoryMap.get(category.id);
+              ) : (
+                categories.map((category) => {
+                  const rankInfo = topCategoryMap.get(category.id);
 
-                return (
-                  <tr key={category.id} className="rounded-[1.25rem] bg-slate-50/80">
-                    <td className="rounded-l-[1.25rem] px-4 py-4 align-top">
+                  return (
+                  <tr key={category.id} className="border-t border-slate-200 align-top">
+                    <td className="px-4 py-4 align-top">
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
                           {category.image ? (
@@ -141,29 +144,32 @@ export default function CategoriesListSection({
                         <Badge>Not ranked</Badge>
                       )}
                     </td>
-                    <td className="rounded-r-[1.25rem] px-4 py-4 align-top">
+                    <td className="px-4 py-4 align-top">
                       <div className="flex justify-end gap-2 whitespace-nowrap">
-                        <button
-                          type="button"
+                        <Button
                           onClick={() => void onOpenView(category)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full border-slate-200 px-3 py-2 text-xs shadow-none"
                         >
                           View
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           onClick={() => onOpenEdit(category)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full border-slate-200 px-3 py-2 text-xs shadow-none"
                         >
                           Edit
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           onClick={() => onRequestDelete(category.id)}
-                          className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full !border-rose-200 !bg-rose-50 !px-3 !py-2 !text-xs !text-rose-700 !shadow-none hover:!bg-rose-100"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -172,36 +178,22 @@ export default function CategoriesListSection({
             )}
           </tbody>
         </table>
-      </div>
+      </TableShell>
 
-      <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-slate-500">
           Showing <span className="font-medium text-slate-900">{categories.length}</span> of{" "}
           <span className="font-medium text-slate-900">{pagination.total}</span> categories
         </p>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={pagination.page <= 1 || loading}
-            onClick={() => onPageChange(Math.max(1, pagination.page - 1))}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-slate-500">
-            Page {pagination.page} of {pagination.totalPages || 1}
-          </span>
-          <button
-            type="button"
-            disabled={pagination.page >= pagination.totalPages || loading}
-            onClick={() => onPageChange(pagination.page + 1)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+        <TablePagination
+          page={pagination.page}
+          totalPages={pagination.totalPages || 1}
+          onPrevious={() => onPageChange(Math.max(1, pagination.page - 1))}
+          onNext={() => onPageChange(pagination.page + 1)}
+          className="gap-2"
+        />
       </div>
-    </article>
+    </TableCard>
   );
 }

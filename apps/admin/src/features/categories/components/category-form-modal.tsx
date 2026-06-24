@@ -1,6 +1,6 @@
 "use client";
 
-import { ModalShell } from "@itech/shared";
+import { Button, FormField, ModalShell, TextArea, TextInput } from "@itech/shared";
 import type { CategoryFormState, ModalMode } from "../types";
 
 type CategoryFormModalProps = {
@@ -32,21 +32,18 @@ export default function CategoryFormModal({
     >
       <div className="p-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Category name</span>
-            <input
+          <FormField label="Category name" hint="This is the name that will be displayed in the catalog.">
+            <TextInput
               value={formState.name}
               onChange={(event) =>
                 onFormChange((current) => ({ ...current, name: event.target.value }))
               }
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
               placeholder="e.g. Electronics"
             />
-          </label>
+          </FormField>
 
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Image</span>
-            <input
+          <FormField label="Image" hint="Choose a square or landscape image for cleaner category cards.">
+            <TextInput
               type="file"
               accept="image/*"
               onChange={(event) => {
@@ -57,9 +54,8 @@ export default function CategoryFormModal({
                   preview: file ? URL.createObjectURL(file) : current.preview,
                 }));
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
             />
-          </label>
+          </FormField>
 
           <div className="sm:col-span-2">
             <span className="mb-2 block text-sm font-medium text-slate-700">Preview</span>
@@ -83,36 +79,30 @@ export default function CategoryFormModal({
             </div>
           </div>
 
-          <label className="block sm:col-span-2">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Description</span>
-            <textarea
+          <FormField label="Description" className="sm:col-span-2">
+            <TextArea
               value={formState.description}
               onChange={(event) =>
                 onFormChange((current) => ({ ...current, description: event.target.value }))
               }
               rows={4}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white"
               placeholder="Short description..."
             />
-          </label>
+          </FormField>
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button onClick={onClose} variant="secondary" className="!shadow-none">
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             disabled={saving}
             onClick={onSubmit}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="primary"
+            className="!border !border-slate-900 !shadow-none"
           >
             {saving ? "Saving..." : modalMode === "add" ? "Create category" : "Save changes"}
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

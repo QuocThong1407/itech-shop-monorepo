@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState, ModalShell } from "@itech/shared";
+import { DetailSection, EmptyState, KeyValueGrid, ModalShell, StatusBadge } from "@itech/shared";
 import { formatCategoryDate, formatCategoryMoney } from "../helpers";
 import type { CategoryRecord, ProductRecord } from "../types";
 
@@ -45,39 +45,31 @@ export default function CategoryViewModal({
               )}
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Description</p>
+            <DetailSection title="Description" className="shadow-none">
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 {category.description || "No description provided."}
               </p>
-            </div>
+            </DetailSection>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[1.25rem] border border-slate-200 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Created</p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {formatCategoryDate(category.createdAt)}
-                </p>
-              </div>
-              <div className="rounded-[1.25rem] border border-slate-200 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Updated</p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {formatCategoryDate(category.updatedAt)}
-                </p>
-              </div>
-            </div>
+            <KeyValueGrid
+              items={[
+                { label: "Created", value: formatCategoryDate(category.createdAt) },
+                { label: "Updated", value: formatCategoryDate(category.updatedAt) },
+              ]}
+              columnsClassName="grid gap-3 sm:grid-cols-2"
+            />
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/60 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[#008ECC]">Products in category</p>
-                <h4 className="mt-1 text-lg font-semibold text-slate-950">
-                  {products.length} items loaded
-                </h4>
-              </div>
-            </div>
-
+          <DetailSection
+            title="Products in category"
+            description="Review products currently attached to this category."
+            className="bg-slate-50/60 shadow-none"
+            actions={
+              <StatusBadge tone="neutral" className="bg-white text-slate-600 ring-slate-200 w-20">
+                {products.length} items loaded
+              </StatusBadge>
+            }
+          >
             <div className="mt-4 max-h-[520px] space-y-3 overflow-y-auto pr-1">
               {productsLoading ? (
                 <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
@@ -118,7 +110,7 @@ export default function CategoryViewModal({
                 />
               )}
             </div>
-          </div>
+          </DetailSection>
         </div>
       ) : null}
     </ModalShell>

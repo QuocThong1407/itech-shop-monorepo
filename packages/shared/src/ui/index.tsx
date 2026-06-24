@@ -613,13 +613,13 @@ export function TablePagination({
 }: TablePaginationProps) {
   return (
     <div className={`flex items-center justify-between gap-3 ${className}`}>
-      <Button variant="secondary" size="sm" onClick={onPrevious} disabled={page <= 1}>
+      <Button className="!rounded-full !shadow-none" variant="secondary" size="md" onClick={onPrevious} disabled={page <= 1}>
         {previousLabel}
       </Button>
-      <div className="text-sm text-slate-500">
-        Page <span className="font-semibold text-slate-900">{page}</span> / {totalPages}
-      </div>
-      <Button variant="secondary" size="sm" onClick={onNext} disabled={page >= totalPages}>
+      <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
+        Page {page} of {totalPages}
+      </span>
+      <Button className="!rounded-full !shadow-none" variant="secondary" size="md" onClick={onNext} disabled={page >= totalPages}>
         {nextLabel}
       </Button>
     </div>
