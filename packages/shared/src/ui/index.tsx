@@ -613,13 +613,13 @@ export function TablePagination({
 }: TablePaginationProps) {
   return (
     <div className={`flex items-center justify-between gap-3 ${className}`}>
-      <Button variant="secondary" size="sm" onClick={onPrevious} disabled={page <= 1}>
+      <Button className="!rounded-full !shadow-none" variant="secondary" size="md" onClick={onPrevious} disabled={page <= 1}>
         {previousLabel}
       </Button>
-      <div className="text-sm text-slate-500">
-        Page <span className="font-semibold text-slate-900">{page}</span> / {totalPages}
-      </div>
-      <Button variant="secondary" size="sm" onClick={onNext} disabled={page >= totalPages}>
+      <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
+        Page {page} of {totalPages}
+      </span>
+      <Button className="!rounded-full !shadow-none" variant="secondary" size="md" onClick={onNext} disabled={page >= totalPages}>
         {nextLabel}
       </Button>
     </div>
@@ -780,7 +780,7 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
-  confirmClassName = "bg-rose-600 hover:bg-rose-700 text-white",
+  confirmClassName = "",
   onConfirm,
   onCancel,
   loading = false,
@@ -798,7 +798,7 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 grid place-items-center p-4"
+      className="fixed inset-0 flex items-center justify-center p-4"
       style={{
         zIndex: 1100,
         isolation: "isolate",
@@ -807,31 +807,35 @@ export function ConfirmDialog({
         WebkitBackdropFilter: "blur(4px)",
       }}
     >
-      <div className="w-full max-w-lg rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.22)]">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
-          {eyebrow}
-        </p>
-        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-          {title}
-        </h3>
-        <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
-        {children ? <div className="mt-4">{children}</div> : null}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            className={`h-11 rounded-2xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${confirmClassName}`}
-          >
-            {loading ? "Processing..." : confirmLabel}
-          </button>
+      <div className="flex max-h-[min(88vh,32rem)] w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_30px_100px_rgba(15,23,42,0.22)]">
+        <div className="min-w-0 flex-1 overflow-y-auto px-6 py-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
+            {eyebrow}
+          </p>
+          <h3 className="mt-2 break-words text-2xl font-semibold tracking-tight text-slate-950">
+            {title}
+          </h3>
+          <p className="mt-3 break-words text-sm leading-6 text-slate-600">{description}</p>
+          {children ? <div className="mt-4 min-w-0 break-words">{children}</div> : null}
+        </div>
+        <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-4">
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className={`${confirmClassName} inline-flex h-11 min-w-[8.5rem] shrink-0 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-5 text-sm font-semibold text-rose-700 shadow-[0_14px_30px_rgba(225,29,72,0.12)] transition hover:bg-rose-100 hover:text-rose-800 disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {loading ? "Processing..." : confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>,

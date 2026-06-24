@@ -1,3 +1,4 @@
+import { Button, FormField, SelectInput, TextInput } from "@itech/shared";
 import type { RevenueGroupBy } from "../types";
 
 type RevenueFilterFormProps = {
@@ -16,54 +17,58 @@ export default function RevenueFilterForm({
   return (
     <form
       method="get"
-      className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:min-w-[34rem]"
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_0.9fr_auto_auto]"
     >
-      <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Start date
-        </span>
-        <input
+      <FormField
+        label="Start date"
+        labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+      >
+        <TextInput
           type="date"
           name="startDate"
           defaultValue={rangeStart}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+          className="!bg-white"
         />
-      </label>
-      <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          End date
-        </span>
-        <input
+      </FormField>
+      <FormField
+        label="End date"
+        labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+      >
+        <TextInput
           type="date"
           name="endDate"
           defaultValue={rangeEnd}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+          className="!bg-white"
         />
-      </label>
-      <label className="space-y-2 sm:col-span-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Group by
-        </span>
-        <select
+      </FormField>
+      <FormField
+        label="Group by"
+        className="sm:col-span-2 xl:col-span-1"
+        labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+      >
+        <SelectInput
           name="groupBy"
           defaultValue={groupBy}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+          className="!bg-white"
         >
           <option value="day">Day</option>
           <option value="month">Month</option>
           <option value="year">Year</option>
-        </select>
-      </label>
-      <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row">
-        <button
+        </SelectInput>
+      </FormField>
+      <div className="sm:col-span-2 xl:col-span-1 xl:self-end">
+        <Button
           type="submit"
-          className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+          variant="primary"
+          className="!w-full !border !border-slate-900 !shadow-none xl:!w-auto"
         >
           Apply filters
-        </button>
+        </Button>
+      </div>
+      <div className="sm:col-span-2 xl:col-span-1 xl:self-end">
         <a
           href={exportHref}
-          className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+          className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 xl:w-auto"
         >
           Export Excel
         </a>

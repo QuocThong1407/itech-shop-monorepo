@@ -1,3 +1,4 @@
+import { DetailSection, InfoField, PageIntro, PanelHeader, SurfaceCard } from "@itech/shared";
 import { formatReportDate } from "../../../lib/report-api";
 import ReportMetricCard from "../revenue/components/report-metric-card";
 import ActivityFilterForm from "./components/activity-filter-form";
@@ -15,28 +16,24 @@ export default function ActivityReportPageContent({
 }: ActivityReportPageContentProps) {
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
-              Activity insights
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              Activity Report
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Review active users, new users, orders, reviews, and role distribution for the
-              selected period.
-            </p>
-          </div>
+      <PageIntro
+        eyebrow="Activity insights"
+        title="Activity Report"
+        description="Review active users, new users, orders, reviews, and role distribution for the selected period."
+        titleClassName="sm:text-3xl"
+      />
 
-          <ActivityFilterForm
-            rangeStart={rangeStart}
-            rangeEnd={rangeEnd}
-            exportHref={exportHref}
-          />
-        </div>
-      </section>
+      <DetailSection
+        title="Filters"
+        description="Adjust the reporting window or export the current activity dataset."
+        className="shadow-[0_18px_50px_rgba(15,23,42,0.06)]"
+      >
+        <ActivityFilterForm
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          exportHref={exportHref}
+        />
+      </DetailSection>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <ReportMetricCard
@@ -67,46 +64,32 @@ export default function ActivityReportPageContent({
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6 xl:flex xl:flex-col xl:space-y-0">
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)] xl:h-full">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Activity timeline</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Users updated from {formatReportDate(rangeStart)} to {formatReportDate(rangeEnd)}
-                  .
-                </p>
-              </div>
-            </div>
+          <SurfaceCard className="xl:h-full">
+            <PanelHeader
+              title="Activity timeline"
+              description={`Users updated from ${formatReportDate(rangeStart)} to ${formatReportDate(rangeEnd)}.`}
+            />
 
             <div className="mt-5">
               <ActivitySummaryBars report={report} />
             </div>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Customers
-                </p>
-                <p className="mt-2 text-xl font-semibold text-slate-950">
-                  {report.statistics.totalCustomers.toLocaleString("vi-VN")}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Sellers
-                </p>
-                <p className="mt-2 text-xl font-semibold text-slate-950">
-                  {report.statistics.totalSellers.toLocaleString("vi-VN")}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Admins
-                </p>
-                <p className="mt-2 text-xl font-semibold text-slate-950">
-                  {report.statistics.totalAdmins.toLocaleString("vi-VN")}
-                </p>
-              </div>
+              <InfoField
+                label="Customers"
+                value={report.statistics.totalCustomers.toLocaleString("vi-VN")}
+                className="p-4"
+              />
+              <InfoField
+                label="Sellers"
+                value={report.statistics.totalSellers.toLocaleString("vi-VN")}
+                className="p-4"
+              />
+              <InfoField
+                label="Admins"
+                value={report.statistics.totalAdmins.toLocaleString("vi-VN")}
+                className="p-4"
+              />
             </div>
 
             <div className="mt-6">
@@ -116,7 +99,7 @@ export default function ActivityReportPageContent({
                 admins={report.activities.admins}
               />
             </div>
-          </article>
+          </SurfaceCard>
         </div>
 
         <ActivitySidebar report={report} rangeStart={rangeStart} rangeEnd={rangeEnd} />

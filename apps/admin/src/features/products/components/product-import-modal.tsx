@@ -1,6 +1,13 @@
 "use client";
 
-import { EmptyState, ModalShell } from "@itech/shared";
+import {
+  Button,
+  DetailSection,
+  EmptyState,
+  KeyValueGrid,
+  ModalShell,
+  StatusBadge,
+} from "@itech/shared";
 import { IMPORT_TEMPLATE_BASE } from "../constants";
 import type { ProductImportResult } from "../types";
 
@@ -40,8 +47,7 @@ export default function ProductImportModal({
     >
       <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-5 p-6 lg:border-r lg:border-slate-200">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-semibold text-slate-900">Template files</p>
+          <DetailSection title="Template files" className="bg-slate-50 shadow-none">
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Use the provided headers exactly. For products with variants, keep
               the <code>variants</code> column as a JSON array string.
@@ -62,11 +68,10 @@ export default function ProductImportModal({
                 Download XLSX
               </a>
             </div>
-          </div>
+          </DetailSection>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <DetailSection title="Import file" className="shadow-sm">
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Import file</span>
               <label className="mt-3 flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:bg-slate-100">
                 <input
                   type="file"
@@ -108,30 +113,25 @@ export default function ProductImportModal({
               <code>sellerUserId</code> is required when admin imports for a
               seller.
             </div>
-          </div>
+          </DetailSection>
 
           <div className="flex flex-wrap justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
+            <Button onClick={onClose} variant="secondary" className="!shadow-none">
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={onSubmit}
               disabled={importing}
-              className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="primary"
+              className="!border !border-slate-900 !shadow-none"
             >
               {importing ? "Importing..." : "Start import"}
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="space-y-5 bg-slate-50 p-6">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Sample row format</p>
+          <DetailSection title="Sample row format" className="shadow-sm">
             <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -164,38 +164,20 @@ export default function ProductImportModal({
                 </table>
               </div>
             </div>
-          </div>
+          </DetailSection>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Import result</p>
+          <DetailSection title="Import result" className="shadow-sm">
             {importResult ? (
               <div className="mt-4 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Total rows
-                    </p>
-                    <p className="mt-2 text-xl font-semibold text-slate-950">
-                      {importResult.total}
-                    </p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                      Success
-                    </p>
-                    <p className="mt-2 text-xl font-semibold text-emerald-900">
-                      {importResult.successCount}
-                    </p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-rose-200 bg-rose-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
-                      Failed
-                    </p>
-                    <p className="mt-2 text-xl font-semibold text-rose-900">
-                      {importResult.failureCount}
-                    </p>
-                  </div>
-                </div>
+                <KeyValueGrid
+                  items={[
+                    { label: "Total rows", value: importResult.total },
+                    { label: "Success", value: importResult.successCount },
+                    { label: "Failed", value: importResult.failureCount },
+                  ]}
+                  columnsClassName="grid gap-3 sm:grid-cols-3"
+                  itemClassName="!rounded-[1.25rem]"
+                />
 
                 <div className="max-h-[320px] overflow-y-auto rounded-[1.5rem] border border-slate-200">
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -212,15 +194,16 @@ export default function ProductImportModal({
                         <tr key={`${row.index}-${row.name ?? "row"}`}>
                           <td className="px-4 py-3 text-slate-600">{row.index}</td>
                           <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            <StatusBadge
+                              tone={row.success ? "success" : "danger"}
+                              className={
                                 row.success
                                   ? "bg-emerald-100 text-emerald-700"
                                   : "bg-rose-100 text-rose-700"
-                              }`}
+                              }
                             >
                               {row.success ? "Imported" : "Failed"}
-                            </span>
+                            </StatusBadge>
                           </td>
                           <td className="px-4 py-3 font-medium text-slate-900">
                             {row.name || "-"}
@@ -242,7 +225,7 @@ export default function ProductImportModal({
                 className="mt-4 py-8"
               />
             )}
-          </div>
+          </DetailSection>
         </div>
       </div>
     </ModalShell>

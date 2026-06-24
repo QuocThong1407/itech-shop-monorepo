@@ -1,6 +1,13 @@
 "use client";
 
-import { EmptyState, ModalShell } from "@itech/shared";
+import {
+  Button,
+  DetailSection,
+  EmptyState,
+  KeyValueGrid,
+  ModalShell,
+  StatusBadge,
+} from "@itech/shared";
 import { formatDateTime, formatMoney } from "../../../lib/admin-api";
 import { stockMeta } from "../constants";
 import type { ProductDetail } from "../types";
@@ -48,38 +55,30 @@ export default function ProductViewModal({
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Price
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {formatMoney(product.price)}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Stock
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {Number(product.stockQuantity || 0).toLocaleString("vi-VN")}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Status
-                </p>
-                <span
-                  className={`mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${stockMeta[selectedStatus].tone}`}
-                >
-                  <span className={`h-2 w-2 rounded-full ${stockMeta[selectedStatus].chip}`} />
-                  {stockMeta[selectedStatus].label}
-                </span>
-              </div>
-            </div>
+            <KeyValueGrid
+              items={[
+                { label: "Price", value: formatMoney(product.price) },
+                {
+                  label: "Stock",
+                  value: Number(product.stockQuantity || 0).toLocaleString("vi-VN"),
+                },
+                {
+                  label: "Status",
+                  value: (
+                    <StatusBadge
+                      className={stockMeta[selectedStatus].tone}
+                      dotClassName={stockMeta[selectedStatus].chip}
+                      withDot
+                    >
+                      {stockMeta[selectedStatus].label}
+                    </StatusBadge>
+                  ),
+                },
+              ]}
+              columnsClassName="grid gap-4 sm:grid-cols-3"
+            />
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Description</p>
+            <DetailSection title="Description" className="bg-slate-50 shadow-none">
               <div className="prose prose-slate mt-3 max-w-none text-sm leading-7 text-slate-600">
                 {product.description ? (
                   <div dangerouslySetInnerHTML={{ __html: product.description }} />
@@ -87,76 +86,41 @@ export default function ProductViewModal({
                   <p>No description provided.</p>
                 )}
               </div>
-            </div>
+            </DetailSection>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Category
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {product.Category?.name || "N/A"}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Seller
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {product.Seller?.User?.username || "N/A"}
-                </p>
-              </div>
-            </div>
+            <KeyValueGrid
+              items={[
+                { label: "Category", value: product.Category?.name || "N/A" },
+                { label: "Seller", value: product.Seller?.User?.username || "N/A" },
+              ]}
+              columnsClassName="grid gap-4 sm:grid-cols-2"
+            />
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Ratings
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {product.averageRating ?? 0}/5
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Reviews
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {(product.reviewCount ?? 0).toLocaleString("vi-VN")}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Sold
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">
-                  {(product.soldCount ?? 0).toLocaleString("vi-VN")}
-                </p>
-              </div>
-            </div>
+            <KeyValueGrid
+              items={[
+                { label: "Ratings", value: `${product.averageRating ?? 0}/5` },
+                {
+                  label: "Reviews",
+                  value: (product.reviewCount ?? 0).toLocaleString("vi-VN"),
+                },
+                { label: "Sold", value: (product.soldCount ?? 0).toLocaleString("vi-VN") },
+              ]}
+              columnsClassName="grid gap-4 sm:grid-cols-3"
+            />
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Timeline</p>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
-                <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-                  <span>Created</span>
-                  <span className="font-medium text-slate-900">
-                    {formatDateTime(product.createdAt)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-                  <span>Updated</span>
-                  <span className="font-medium text-slate-900">
-                    {formatDateTime(product.updatedAt)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <DetailSection title="Timeline" className="shadow-sm">
+              <KeyValueGrid
+                items={[
+                  { label: "Created", value: formatDateTime(product.createdAt) },
+                  { label: "Updated", value: formatDateTime(product.updatedAt) },
+                ]}
+                columnsClassName="grid gap-3"
+              />
+            </DetailSection>
           </div>
 
           <div className="space-y-5 bg-slate-50 p-6">
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Gallery</p>
+            <DetailSection title="Gallery" className="shadow-sm">
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {(product.images ?? []).length > 0 ? (
                   product.images?.map((image, index) => (
@@ -177,10 +141,9 @@ export default function ProductViewModal({
                   <EmptyState title="No gallery images." className="col-span-full py-8" />
                 )}
               </div>
-            </div>
+            </DetailSection>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-slate-900">Variants</p>
+            <DetailSection title="Variants" className="shadow-sm">
               <div className="mt-4 space-y-3">
                 {(product.ProductVariant ?? []).length > 0 ? (
                   product.ProductVariant?.map((variant) => (
@@ -210,16 +173,16 @@ export default function ProductViewModal({
                   <EmptyState title="No variants for this product." className="py-6" />
                 )}
               </div>
-            </div>
+            </DetailSection>
 
             <div className="flex justify-end gap-3">
-              <button
-                type="button"
+              <Button
                 onClick={() => onEdit(product)}
-                className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                variant="secondary"
+                className="!shadow-none"
               >
                 Edit product
-              </button>
+              </Button>
             </div>
           </div>
         </div>

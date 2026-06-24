@@ -14,18 +14,17 @@ export default function RecentOrdersPanel({ orderList }: RecentOrdersPanelProps)
       <PanelHeader
         title="Latest activity"
         eyebrow="Recent orders"
-        actions={<span className="text-sm text-slate-500">Fetched from `/api/orders`</span>}
       />
 
-      <TableShell className="mt-6 flex-1 pb-0" innerClassName="h-full overflow-x-auto border-0">
-        <table className="w-full min-w-[760px] border-separate border-spacing-y-3">
+      <TableShell className="mt-6 flex-1 !p-0" innerClassName="h-full border-0">
+        <table className="w-full border-separate border-spacing-y-3">
           <thead>
             <tr className="text-left text-xs uppercase tracking-[0.2em] text-slate-400">
-              <th className="px-4 py-2 font-medium">Order</th>
-              <th className="px-4 py-2 font-medium">Customer</th>
-              <th className="px-4 py-2 font-medium">Amount</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Date</th>
+              <th className="w-[32%] px-4 py-2 font-medium">Order</th>
+              <th className="w-[26%] px-4 py-2 font-medium">Customer</th>
+              <th className="w-[16%] px-4 py-2 font-medium">Amount</th>
+              <th className="w-[14%] px-4 py-2 font-medium">Status</th>
+              <th className="w-[12%] px-4 py-2 font-medium">Date</th>
             </tr>
           </thead>
           <tbody>

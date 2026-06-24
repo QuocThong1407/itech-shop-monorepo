@@ -1,5 +1,7 @@
 "use client";
 
+import { FormField, TextInput } from "@itech/shared";
+
 type LabeledInputProps = {
   label: string;
   value: string;
@@ -16,18 +18,18 @@ export function LabeledInput({
   placeholder,
 }: LabeledInputProps) {
   return (
-    <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-        {label}
-      </span>
-      <input
+    <FormField
+      label={label}
+      labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+    >
+      <TextInput
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+        className="text-slate-900"
       />
-    </label>
+    </FormField>
   );
 }
 
@@ -45,19 +47,20 @@ export function LabeledNumber({
   placeholder,
 }: LabeledNumberProps) {
   return (
-    <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-        {label}
-      </span>
-      <input
+    <FormField
+      label={label}
+      labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+      className="!flex !flex-col gap-1.5"
+    >
+      <TextInput
         type="number"
         min="0"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+        className="text-slate-900 h-fit"
       />
-    </label>
+    </FormField>
   );
 }
 
