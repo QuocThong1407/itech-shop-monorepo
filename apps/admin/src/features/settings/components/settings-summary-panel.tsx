@@ -1,5 +1,6 @@
 "use client";
 
+import { KeyValueGrid } from "@itech/shared";
 import SettingsSection from "./settings-section";
 import { toMoneyOrDash } from "../helpers";
 import type { ShippingDraft, SystemConfigsResponse, VatDraft } from "../types";
@@ -20,36 +21,28 @@ export default function SettingsSummaryPanel({
       title="Current values"
       subtitle="Live backend data reflected in the current configuration."
     >
-      <div className="space-y-3">
-        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span className="text-sm text-slate-500">VAT</span>
-          <span className="text-sm font-semibold text-slate-900">{vatRate.rate}%</span>
-        </div>
-        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span className="text-sm text-slate-500">Shipping base fee</span>
-          <span className="text-sm font-semibold text-slate-900">
-            {toMoneyOrDash(Number(shipping.baseFee || 0))}
-          </span>
-        </div>
-        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span className="text-sm text-slate-500">Shipping per km</span>
-          <span className="text-sm font-semibold text-slate-900">
-            {toMoneyOrDash(Number(shipping.feePerKm || 0))}
-          </span>
-        </div>
-        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span className="text-sm text-slate-500">Tiers loaded</span>
-          <span className="text-sm font-semibold text-slate-900">
-            {configs?.membership.tiers.length ?? 0}
-          </span>
-        </div>
-        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span className="text-sm text-slate-500">Benefits loaded</span>
-          <span className="text-sm font-semibold text-slate-900">
-            {configs?.membership.benefits.length ?? 0}
-          </span>
-        </div>
-      </div>
+      <KeyValueGrid
+        items={[
+          { label: "VAT", value: `${vatRate.rate}%` },
+          {
+            label: "Shipping base fee",
+            value: toMoneyOrDash(Number(shipping.baseFee || 0)),
+          },
+          {
+            label: "Shipping per km",
+            value: toMoneyOrDash(Number(shipping.feePerKm || 0)),
+          },
+          {
+            label: "Tiers loaded",
+            value: configs?.membership.tiers.length ?? 0,
+          },
+          {
+            label: "Benefits loaded",
+            value: configs?.membership.benefits.length ?? 0,
+          },
+        ]}
+        columnsClassName="grid gap-3"
+      />
     </SettingsSection>
   );
 }

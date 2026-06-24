@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@itech/shared";
 import GeneralSettingsPanel from "./components/general-settings-panel";
 import MembershipSettingsPanel from "./components/membership-settings-panel";
 import SettingsHeader from "./components/settings-header";
@@ -35,9 +36,10 @@ export default function SettingsPageClient() {
               title="Loading settings"
               subtitle="Fetching live data from the backend..."
             >
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Loading system parameters...
-              </div>
+              <EmptyState
+                title="Loading system parameters..."
+                className="py-10"
+              />
             </SettingsSection>
           ) : state.activeTab === "general" ? (
             <GeneralSettingsPanel
