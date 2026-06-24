@@ -1,3 +1,5 @@
+import { Button, FormField, TextInput } from "@itech/shared";
+
 type ActivityFilterFormProps = {
   rangeStart: string;
   rangeEnd: string;
@@ -12,40 +14,43 @@ export default function ActivityFilterForm({
   return (
     <form
       method="get"
-      className="grid gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:min-w-[28rem]"
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_auto_auto]"
     >
-      <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Start date
-        </span>
-        <input
+      <FormField
+        label="Start date"
+        labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+      >
+        <TextInput
           type="date"
           name="startDate"
           defaultValue={rangeStart}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+          className="!bg-white"
         />
-      </label>
-      <label className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          End date
-        </span>
-        <input
+      </FormField>
+      <FormField
+        label="End date"
+        labelClassName="text-xs uppercase tracking-[0.2em] !text-slate-500"
+      >
+        <TextInput
           type="date"
           name="endDate"
           defaultValue={rangeEnd}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+          className="!bg-white"
         />
-      </label>
-      <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row">
-        <button
+      </FormField>
+      <div className="sm:col-span-2 xl:col-span-1 xl:self-end">
+        <Button
           type="submit"
-          className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+          variant="primary"
+          className="!w-full !border !border-slate-900 !shadow-none xl:!w-auto"
         >
           Apply filters
-        </button>
+        </Button>
+      </div>
+      <div className="sm:col-span-2 xl:col-span-1 xl:self-end">
         <a
           href={exportHref}
-          className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+          className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 xl:w-auto"
         >
           Export Excel
         </a>

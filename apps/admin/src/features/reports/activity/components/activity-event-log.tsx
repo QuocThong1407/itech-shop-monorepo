@@ -1,3 +1,4 @@
+import { EmptyState, StatusBadge, TableCard, TableShell } from "@itech/shared";
 import { formatReportDate } from "../../../../lib/report-api";
 import { eventTone } from "../helpers";
 import type { ActivityReport } from "../types";
@@ -8,16 +9,12 @@ type ActivityEventLogProps = {
 
 export default function ActivityEventLog({ report }: ActivityEventLogProps) {
   return (
-    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">Operational activity log</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Recent events from users, orders, returns, cancellations, products, reports, and
-            system configuration.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+    <TableCard
+      title="Operational activity log"
+      description="Recent events from users, orders, returns, cancellations, products, reports, and system configuration."
+      className="rounded-[1.75rem] shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
+      actions={
+        <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 h-fit">
           {[
             ["Orders", report.eventSummary.orderEvents],
             ["Products", report.eventSummary.productEvents],
@@ -33,11 +30,12 @@ export default function ActivityEventLog({ report }: ActivityEventLogProps) {
             </div>
           ))}
         </div>
-      </div>
+      }
+    >
 
-      <div className="mt-5 max-h-[36rem] overflow-auto">
-        <table className="w-full min-w-[860px] table-fixed divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+      <TableShell className="pt-0 mt-5" innerClassName="max-h-[36rem] overflow-x-auto overflow-y-auto">
+        <table className="w-full min-w-[1080px] table-fixed divide-y divide-slate-200">
+          <thead className="sticky top-0 z-10 bg-slate-50">
             <tr>
               <th className="w-[18%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                 Timestamp
@@ -65,13 +63,11 @@ export default function ActivityEventLog({ report }: ActivityEventLogProps) {
                   </td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${eventTone(
-                          event.entityType,
-                        )}`}
+                      <StatusBadge
+                        className={eventTone(event.entityType)}
                       >
                         {event.entityType}
-                      </span>
+                      </StatusBadge>
                       <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
                         {event.action}
                       </span>
@@ -95,14 +91,14 @@ export default function ActivityEventLog({ report }: ActivityEventLogProps) {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">
-                  No recent events found in this reporting window.
+                <td colSpan={5} className="px-4 py-12">
+                  <EmptyState title="No recent events found in this reporting window." />
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
-    </section>
+      </TableShell>
+    </TableCard>
   );
 }

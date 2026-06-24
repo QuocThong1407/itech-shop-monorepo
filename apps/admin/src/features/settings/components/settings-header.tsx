@@ -26,7 +26,7 @@ export default function SettingsHeader({
       className="bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.06)]"
       titleClassName="sm:text-4xl"
       actions={
-        <>
+        <div className="pt-5 flex gap-3">
           <Button
             type="button"
             onClick={onReload}
@@ -43,7 +43,7 @@ export default function SettingsHeader({
           >
             {activeTab === "general" ? "Save general settings" : "Save membership settings"}
           </Button>
-        </>
+        </div>
       }
     >
 

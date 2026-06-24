@@ -282,7 +282,7 @@ export function PageIntro({
               {description}
             </p>
           </div>
-          {actions ? <div className="flex flex-wrap gap-3 pt-5">{actions}</div> : null}
+          {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
         </div>
         {aside ? <div>{aside}</div> : null}
       </div>
