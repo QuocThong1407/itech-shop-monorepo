@@ -1,5 +1,17 @@
 "use client";
 
+import {
+  Button,
+  EmptyState,
+  FilterToolbar,
+  SearchInput,
+  SelectInput,
+  StatusBadge,
+  TableCard,
+  TablePagination,
+  TableShell,
+  TabPills,
+} from "@itech/shared";
 import { formatMoney } from "../../../lib/admin-api";
 import { PAGE_SIZE, stockMeta } from "../constants";
 import { normalizeStockStatus } from "../helpers";
@@ -14,7 +26,9 @@ type ProductListSectionProps = {
   onOpenBulkDelete: () => void;
   selectedCount: number;
   statusFilter: "ALL" | "ACTIVE" | "LOW_STOCK" | "OUT_STOCK";
-  onStatusFilterChange: (value: "ALL" | "ACTIVE" | "LOW_STOCK" | "OUT_STOCK") => void;
+  onStatusFilterChange: (
+    value: "ALL" | "ACTIVE" | "LOW_STOCK" | "OUT_STOCK",
+  ) => void;
   categoryFilter: string;
   onCategoryFilterChange: (value: string) => void;
   categories: CategoryOption[];
@@ -69,145 +83,125 @@ export default function ProductListSection({
   onNextPage,
 }: ProductListSectionProps) {
   return (
-    <section className="space-y-6">
-      <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Product list</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Search, filter, and manage inventory records.
-            </p>
-          </div>
+    <TableCard className="rounded-[2rem] shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+      <FilterToolbar className="border-b border-slate-200 px-5 pb-4 pt-5">
+        <TabPills
+          items={[
+            { key: "ALL", label: "All" },
+            { key: "ACTIVE", label: "In stock" },
+            { key: "LOW_STOCK", label: "Low stock" },
+            { key: "OUT_STOCK", label: "Out stock" },
+          ]}
+          activeKey={statusFilter}
+          onChange={(key) =>
+            onStatusFilterChange(
+              key as "ALL" | "ACTIVE" | "LOW_STOCK" | "OUT_STOCK",
+            )
+          }
+          className="justify-start"
+          activeClassName="!bg-slate-950 !text-white !shadow-none"
+          inactiveClassName="!border !border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-50"
+        />
 
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex h-11 min-w-[18rem] items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-600">
-              <span className="text-slate-400">Search</span>
-              <input
-                value={searchInput}
-                onChange={(event) => onSearchInputChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    onSearch();
-                  }
-                }}
-                placeholder="Name, category, seller"
-                className="w-full bg-transparent text-slate-900 outline-none placeholder:text-slate-400"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={onSearch}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              onClick={onClear}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={onRefresh}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={onOpenBulkDelete}
-              disabled={selectedCount === 0}
-              className="h-11 rounded-2xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Delete selected
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <SelectInput
+            value={categoryFilter}
+            onChange={(event) => onCategoryFilterChange(event.target.value)}
+            className="!h-11 !w-auto !min-w-[12rem] !bg-white"
+          >
+            <option value="ALL">All categories</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </SelectInput>
+
+          <Button
+            onClick={onRefresh}
+            variant="secondary"
+            className="!shadow-none"
+          >
+            Refresh
+          </Button>
+
+          <Button
+            onClick={onOpenImport}
+            variant="secondary"
+            className="!shadow-none"
+          >
+            Import file
+          </Button>
+
+          <Button
+            onClick={onOpenAdd}
+            variant="primary"
+            className="!border !border-slate-900 !shadow-none"
+          >
+            Add product
+          </Button>
         </div>
+      </FilterToolbar>
 
-        <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {(["ALL", "ACTIVE", "LOW_STOCK", "OUT_STOCK"] as const).map(
-              (status) => {
-                const active = statusFilter === status;
-                const label =
-                  status === "ALL"
-                    ? "All"
-                    : status === "ACTIVE"
-                      ? "In stock"
-                      : status === "LOW_STOCK"
-                        ? "Low stock"
-                        : "Out stock";
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => onStatusFilterChange(status)}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                      active
-                        ? "bg-slate-950 text-white shadow-[0_10px_22px_rgba(15,23,42,0.16)]"
-                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              },
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={categoryFilter}
-              onChange={(event) => onCategoryFilterChange(event.target.value)}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-            >
-              <option value="ALL">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={onOpenImport}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Import file
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenAdd}
-              className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
-            >
-              Add product
-            </button>
-          </div>
+      <div className="px-5 pb-4 pt-5">
+        <div className="flex items-center gap-3">
+          <SearchInput
+            value={searchInput}
+            onChange={(event) => onSearchInputChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                onSearch();
+              }
+            }}
+            placeholder="Name, category, seller"
+            className="!w-full w-xl !max-w-[22rem] !bg-white !focus:border-sky-300 !focus:ring-sky-100"
+          />
+          <Button
+            onClick={onSearch}
+            variant="secondary"
+            className="!shadow-none"
+          >
+            Search
+          </Button>
+          <Button
+            onClick={onClear}
+            variant="secondary"
+            className="!shadow-none"
+          >
+            Clear
+          </Button>
+          <Button
+            onClick={onOpenBulkDelete}
+            disabled={selectedCount === 0}
+            variant="secondary"
+            className="!border-rose-200 !bg-rose-50 !text-rose-700 !shadow-none hover:!bg-rose-100"
+          >
+            Delete selected
+          </Button>
         </div>
+      </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+      <div className="px-5 pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           <p>
             {selectedCount > 0
               ? `${selectedCount} products selected for bulk actions.`
               : "Select one or more products to use bulk delete."}
           </p>
           {selectedCount > 0 ? (
-            <button
-              type="button"
+            <Button
               onClick={onClearSelection}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              size="md"
+              variant="secondary"
+              className="rounded-full border-slate-200 shadow-none"
             >
               Clear selection
-            </button>
+            </Button>
           ) : null}
         </div>
-      </article>
+      </div>
 
-      <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+      <TableShell className="pt-0">
         <table className="w-full table-fixed divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
@@ -243,20 +237,23 @@ export default function ProductListSection({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 bg-white">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-5 py-16 text-center text-sm text-slate-500">
+                <td
+                  colSpan={8}
+                  className="px-5 py-16 text-center text-sm text-slate-500"
+                >
                   Loading products...
                 </td>
               </tr>
             ) : pagedProducts.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-5 py-16 text-center">
-                  <p className="text-sm font-medium text-slate-900">No products found</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Try another filter or create a new product.
-                  </p>
+                  <EmptyState
+                    title="No products found"
+                    description="Try another filter or create a new product."
+                  />
                 </td>
               </tr>
             ) : (
@@ -300,9 +297,6 @@ export default function ProductListSection({
                       <p className="truncate font-medium text-slate-900">
                         {product.Category?.name || "N/A"}
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">
-                        {product.categoryId.slice(0, 8)}
-                      </p>
                     </td>
                     <td className="px-5 py-5 text-sm text-slate-600">
                       <p className="truncate font-medium text-slate-900">
@@ -317,40 +311,46 @@ export default function ProductListSection({
                     </td>
                     <td className="px-5 py-5 text-sm text-slate-600">
                       <span className="font-semibold text-slate-900">
-                        {Number(product.stockQuantity || 0).toLocaleString("vi-VN")}
+                        {Number(product.stockQuantity || 0).toLocaleString(
+                          "vi-VN",
+                        )}
                       </span>
                     </td>
                     <td className="px-5 py-5">
-                      <span
-                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${stockMeta[status].tone}`}
+                      <StatusBadge
+                        className={stockMeta[status].tone}
+                        dotClassName={stockMeta[status].chip}
+                        withDot
                       >
-                        <span className={`h-2 w-2 rounded-full ${stockMeta[status].chip}`} />
                         {stockMeta[status].label}
-                      </span>
+                      </StatusBadge>
                     </td>
                     <td className="px-5 py-5">
                       <div className="flex flex-nowrap justify-end gap-2 whitespace-nowrap">
-                        <button
-                          type="button"
+                        <Button
                           onClick={() => onViewProduct(product)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full border-slate-200 px-3 py-2 text-xs shadow-none"
                         >
                           View
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           onClick={() => onEditProduct(product)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full border-slate-200 px-3 py-2 text-xs shadow-none"
                         >
                           Edit
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           onClick={() => onDeleteProduct(product)}
-                          className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                          size="sm"
+                          variant="secondary"
+                          className="rounded-full !border-rose-200 !bg-rose-50 !px-3 !py-2 !text-xs !text-rose-700 !shadow-none hover:!bg-rose-100"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -359,36 +359,25 @@ export default function ProductListSection({
             )}
           </tbody>
         </table>
+      </TableShell>
 
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Showing {(page - 1) * PAGE_SIZE + 1}-{" "}
-            {Math.min(page * PAGE_SIZE, filteredProductsLength)} of{" "}
-            {filteredProductsLength}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={onPrevPage}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
-              {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={onNextPage}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </article>
-    </section>
+      <div className="flex flex-col gap-3 px-5 pb-5 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          Showing{" "}
+          {filteredProductsLength === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{" "}
+          {Math.min(page * PAGE_SIZE, filteredProductsLength)} of{" "}
+          {filteredProductsLength}
+        </p>
+        <TablePagination
+          page={page}
+          totalPages={totalPages || 1}
+          onPrevious={onPrevPage}
+          onNext={onNextPage}
+          previousLabel="Prev"
+          nextLabel="Next"
+          className="gap-2"
+        />
+      </div>
+    </TableCard>
   );
 }
