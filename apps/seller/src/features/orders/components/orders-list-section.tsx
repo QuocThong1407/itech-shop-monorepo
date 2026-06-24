@@ -124,11 +124,11 @@ export default function OrdersListSection({
             <tr className="text-left text-xs uppercase tracking-[0.18em] text-slate-500">
               <th className="w-[14%] px-4 py-3">Order</th>
               <th className="w-[18%] px-4 py-3">Customer</th>
-              <th className="w-[18%] px-4 py-3">Address</th>
+              <th className="w-[20%] px-4 py-3">Address</th>
               <th className="w-[10%] px-4 py-3">Payment</th>
               <th className="w-[12%] px-4 py-3">Total</th>
-              <th className="w-[12%] px-4 py-3">Status</th>
-              <th className="w-[16%] px-4 py-3">Actions</th>
+              <th className="w-[14%] px-4 py-3">Status</th>
+              <th className="w-[12%] px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
