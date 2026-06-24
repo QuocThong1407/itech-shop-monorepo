@@ -1,6 +1,14 @@
 "use client";
 
-import { ModalShell } from "@itech/shared";
+import {
+  Button,
+  DetailSection,
+  FormField,
+  ModalShell,
+  SelectInput,
+  StatusBadge,
+  TextInput,
+} from "@itech/shared";
 import { findPromotionById, formatDateTime, normalizeStatus, promotionStatusLabels, statusMeta } from "../helpers";
 import type { CouponDraft, CouponRecord, PromotionOption, ViewMode } from "../types";
 
@@ -41,9 +49,8 @@ export default function CouponFormModal({
     >
       <div className="grid gap-0 lg:grid-cols-[1fr_0.82fr]">
         <div className="space-y-5 p-6 lg:border-r lg:border-slate-200">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Coupon code</span>
-            <input
+          <FormField label="Coupon code">
+            <TextInput
               value={draft.code}
               onChange={(event) =>
                 onDraftChange((current) => ({
@@ -52,13 +59,15 @@ export default function CouponFormModal({
                 }))
               }
               placeholder="SUMMER25"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm uppercase tracking-[0.2em] outline-none transition focus:border-slate-400 focus:bg-white"
+              className="uppercase tracking-[0.2em]"
             />
-          </label>
+          </FormField>
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Linked promotion</span>
-            <select
+          <FormField
+            label="Linked promotion"
+            hint="Coupon timing and availability follow the selected promotion."
+          >
+            <SelectInput
               value={draft.promotionId}
               onChange={(event) =>
                 onDraftChange((current) => ({
@@ -74,16 +83,12 @@ export default function CouponFormModal({
                   {promotion.name} - {promotionStatusLabels[normalizeStatus(promotion.status)]}
                 </option>
               ))}
-            </select>
-            <p className="text-xs leading-5 text-slate-500">
-              Coupon timing and availability follow the selected promotion.
-            </p>
-          </label>
+            </SelectInput>
+          </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-700">Discount percentage</span>
-              <input
+            <FormField label="Discount percentage">
+              <TextInput
                 type="number"
                 min={1}
                 max={100}
@@ -95,13 +100,11 @@ export default function CouponFormModal({
                   }))
                 }
                 placeholder="25"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
               />
-            </label>
+            </FormField>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-700">Max usage</span>
-              <input
+            <FormField label="Max usage">
+              <TextInput
                 type="number"
                 min={1}
                 value={draft.maxUsage}
@@ -112,24 +115,21 @@ export default function CouponFormModal({
                   }))
                 }
                 placeholder="100"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
               />
-            </label>
+            </FormField>
           </div>
 
           {editingId && selectedCoupon ? (
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-900">Current usage</p>
+            <DetailSection title="Current usage" className="shadow-none">
               <p className="mt-2 text-sm text-slate-600">
                 {selectedCoupon.usageCount} / {selectedCoupon.maxUsage} uses consumed.
               </p>
-            </div>
+            </DetailSection>
           ) : null}
         </div>
 
         <div className="space-y-5 bg-slate-50 p-6">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Live preview</p>
+          <DetailSection title="Live preview" className="shadow-sm">
             <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-slate-950 p-5 text-white">
               <p className="text-xs uppercase tracking-[0.24em] text-white/50">Coupon code</p>
               <p className="mt-2 text-2xl font-semibold tracking-[0.18em]">
@@ -145,10 +145,9 @@ export default function CouponFormModal({
                 </div>
               </div>
             </div>
-          </div>
+          </DetailSection>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Selected promotion</p>
+          <DetailSection title="Selected promotion" className="shadow-sm">
             <div className="mt-4 rounded-[1.5rem] bg-slate-50 p-4">
               {draft.promotionId ? (
                 selectedPromotion ? (
@@ -163,18 +162,13 @@ export default function CouponFormModal({
                           {formatDateTime(selectedPromotion.endDate)}
                         </p>
                       </div>
-                      <span
-                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
-                          statusMeta[normalizeStatus(selectedPromotion.status)].tone
-                        }`}
+                      <StatusBadge
+                        className={statusMeta[normalizeStatus(selectedPromotion.status)].tone}
+                        dotClassName={statusMeta[normalizeStatus(selectedPromotion.status)].chip}
+                        withDot
                       >
-                        <span
-                          className={`h-2 w-2 rounded-full ${
-                            statusMeta[normalizeStatus(selectedPromotion.status)].chip
-                          }`}
-                        />
                         {statusMeta[normalizeStatus(selectedPromotion.status)].label}
-                      </span>
+                      </StatusBadge>
                     </div>
                   </div>
                 ) : (
@@ -184,24 +178,20 @@ export default function CouponFormModal({
                 <p className="text-sm text-slate-500">Choose a promotion to preview it here.</p>
               )}
             </div>
-          </div>
+          </DetailSection>
 
           <div className="flex flex-wrap justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
+            <Button onClick={onClose} variant="secondary" className="!shadow-none">
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={onSubmit}
               disabled={saving}
-              className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="primary"
+              className="!border !border-slate-900 !shadow-none"
             >
               {saving ? "Saving..." : viewMode === "add" ? "Create coupon" : "Save changes"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

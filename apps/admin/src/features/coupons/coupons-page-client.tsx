@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfirmDialog, StatCard } from "@itech/shared";
+import { AlertBanner, ConfirmDialog, MetricsGrid, PageIntro, StatCard } from "@itech/shared";
 import CouponFormModal from "./components/coupon-form-modal";
 import CouponsListSection from "./components/coupons-list-section";
 import CouponViewModal from "./components/coupon-view-modal";
@@ -11,30 +11,19 @@ export default function CouponsPageClient() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
-              Discount vault
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Coupons
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Manage code-based discounts linked to promotions, with usage limits and real-time
-              availability.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageIntro
+        eyebrow="Discount vault"
+        title="Coupons"
+        description="Manage code-based discounts linked to promotions, with usage limits and real-time availability."
+        className="bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.06)]"
+        titleClassName="sm:text-4xl"
+      />
 
       {state.error ? (
-        <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
-          {state.error}
-        </div>
+        <AlertBanner tone="danger" message={state.error} className="rounded-[1.5rem]" />
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <MetricsGrid className="xl:grid-cols-5">
         <StatCard
           title="Total coupons"
           value={state.stats.total}
@@ -65,7 +54,7 @@ export default function CouponsPageClient() {
           note="Paused or hidden campaigns"
           accentClassName="bg-slate-500"
         />
-      </section>
+      </MetricsGrid>
 
       <CouponsListSection
         loading={state.loading}
