@@ -7,18 +7,19 @@ const sellerAppUrl = process.env.SELLER_APP_URL ?? "http://localhost:3002";
 const adminAppUrl = process.env.ADMIN_APP_URL ?? "http://localhost:3003";
 
 const roleOrigins = {
-  admin: adminAppUrl,
-  seller: sellerAppUrl,
-  customer: customerAppUrl,
+  ADMIN: adminAppUrl,
+  SELLER: sellerAppUrl,
+  CUSTOMER: customerAppUrl,
 } as const;
 
 // Routes không cần đăng nhập
 const PUBLIC_PREFIXES = [
-  "/customer/products",
-  "/customer/search",
+  "/products",
+  "/search",
+  "/api/products",
 ];
 
-const PUBLIC_EXACT = ["/customer", "/customer/"];
+const PUBLIC_EXACT = ["/", ""];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -46,9 +47,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Đúng role → cho qua
-  if (role === "customer") {
-    return NextResponse.next();
-  }
+  if (role === "CUSTOMER") { 
+  return NextResponse.next();
+}
 
   // Sai role → redirect về app tương ứng
   return NextResponse.redirect(

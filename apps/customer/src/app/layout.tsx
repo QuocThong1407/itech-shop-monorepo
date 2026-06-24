@@ -32,14 +32,14 @@ export default async function CustomerLayout({
   const role = normalizeAuthRole(
     cookieStore.get(AUTH_COOKIE_NAMES.authRole)?.value,
   );
-  if (!token || role !== "CUSTOMER") {
-    redirect(`${HOST_APP_URL}/login?next=${encodeURIComponent("/customer")}`);
-  }
 
-  // token đã có, fetch song song — lỗi không làm vỡ layout
+  const isLoggedIn = !!token && role === "CUSTOMER";
+
+  // Không redirect ở layout nữa — để từng page tự handle nếu cần auth
+
   const [cart, profile, cats] = await Promise.allSettled([
-    getCart(),
-    getProfile(),
+    isLoggedIn ? getCart() : Promise.reject("guest"),
+    isLoggedIn ? getProfile() : Promise.reject("guest"),
     getCategories(),
   ]);
 

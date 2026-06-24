@@ -138,35 +138,60 @@ export function CustomerShell({
               </div>
 
               {/* Cart */}
-              <Link
-                href="/cart"
-                className="relative flex items-center gap-1.5 text-sm text-zinc-600 hover:text-blue-600 transition"
-                aria-label="Giỏ hàng"
-              >
-                <div className="relative">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.75}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                      {cartCount > 99 ? "99+" : cartCount}
-                    </span>
-                  )}
-                </div>
-                <span className="hidden sm:block text-xs">Giỏ hàng</span>
-              </Link>
-
+              {userName ? (
+                <Link
+                  href="/cart"
+                  className="relative flex items-center gap-1.5 text-sm text-zinc-600 hover:text-blue-600 transition"
+                  aria-label="Giỏ hàng"
+                >
+                  <div className="relative">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                        {cartCount > 99 ? "99+" : cartCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden sm:block text-xs">Giỏ hàng</span>
+                </Link>
+              ) : (
+                <a
+                  href={`${HOST_APP_URL}/login`}
+                  className="relative flex items-center gap-1.5 text-sm text-zinc-600 hover:text-blue-600 transition"
+                  aria-label="Giỏ hàng"
+                >
+                  <div className="relative">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                  </div>
+                  <span className="hidden sm:block text-xs">Giỏ hàng</span>
+                </a>
+              )}
               {/* User + logout — desktop */}
               <div className="hidden md:flex items-center gap-2 border-l border-zinc-200 pl-4">
                 <svg

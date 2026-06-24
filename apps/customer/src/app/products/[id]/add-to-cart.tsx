@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+const HOST_APP_URL =
+  process.env.NEXT_PUBLIC_HOST_APP_URL ?? "http://localhost:3000";
 interface Variant {
   id: string;
   variantAttributes: Record<string, string>;
@@ -15,6 +17,7 @@ interface Props {
   variants: Variant[];
   variantTypes: string[];
   variantOptions: Record<string, string[]>;
+  isLoggedIn: boolean;
 }
 
 type ToastState = { type: "success" | "error"; message: string } | null;
@@ -35,6 +38,7 @@ export default function AddToCart({
   variants,
   variantTypes,
   variantOptions,
+  isLoggedIn,
 }: Props) {
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
@@ -119,6 +123,11 @@ export default function AddToCart({
   };
 
   const handleAddToCart = async () => {
+    // Chặn nếu chưa đăng nhập
+    if (!isLoggedIn) {
+      showToast("error", "Vui lòng đăng nhập để thêm vào giỏ hàng.");
+      return;
+    }
     if (!matchedVariant) return;
     setLoading(true);
     try {
@@ -362,7 +371,15 @@ export default function AddToCart({
               />
             </svg>
           )}
-          {toast.message}
+          <span className="flex-1">{toast.message}</span>
+          {!isLoggedIn && toast.type === "error" && (
+            <a
+              href={`${HOST_APP_URL}/login`}
+              className="shrink-0 underline font-semibold hover:opacity-80"
+            >
+              Đăng nhập
+            </a>
+          )}
         </div>
       )}
     </div>

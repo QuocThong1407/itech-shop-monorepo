@@ -112,6 +112,10 @@ export default async function ProductDetailPage({
   const product = await getProduct(id);
   if (!product) notFound();
 
+  // Check login
+  const cookieStore = await cookies();
+  const isLoggedIn = !!cookieStore.get("accessToken")?.value;
+
   const variantOptions: Record<string, string[]> = (() => {
     const raw = (product as any).variantOptions;
     if (!raw) return {};
