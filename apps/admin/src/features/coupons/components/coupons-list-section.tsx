@@ -96,7 +96,7 @@ export default function CouponsListSection({
         </div>
       </FilterToolbar>
 
-      <div className="border-b border-slate-200 px-5 pb-4 pt-5">
+      <div className="px-5 pb-4 pt-5">
         <div className="flex items-center gap-3">
           <SearchInput
             value={searchInput}
