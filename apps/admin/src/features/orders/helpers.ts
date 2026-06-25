@@ -24,7 +24,7 @@ export function getStatusLabel(status?: string) {
 }
 
 const allowedStatusTransitions: Record<string, string[]> = {
-  PENDING: ["SHIPPED", "CANCELLED"],
+  PENDING: ["CONFIRMED", "SHIPPED", "CANCELLED"],
   CONFIRMED: ["SHIPPED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
@@ -35,13 +35,7 @@ const allowedStatusTransitions: Record<string, string[]> = {
 export function getAvailableStatusOptions(status?: string) {
   const current = normalizeStatus(status);
   const nextOptions = allowedStatusTransitions[current] ?? [];
-
-  if (current === "CONFIRMED") {
-    return ["SHIPPED", "CANCELLED"];
-  }
-
   return [current, ...nextOptions].filter((value, index, array) => {
-    if (value === "CONFIRMED") return false;
     return array.indexOf(value) === index;
   });
 }
@@ -138,6 +132,7 @@ export function buildOrderStats(orders: OrderRecord[]): OrderStats {
     const status = normalizeStatus(order.status);
     summary.total += 1;
     if (status === "PENDING") summary.pending += 1;
+    else if (status === "CONFIRMED") summary.confirmed += 1;
     else if (status === "SHIPPED") summary.shipped += 1;
     else if (status === "DELIVERED") summary.delivered += 1;
     else if (status === "CANCELLED") summary.cancelled += 1;
