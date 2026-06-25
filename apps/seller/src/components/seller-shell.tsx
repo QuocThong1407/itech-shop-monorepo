@@ -10,14 +10,17 @@ import logo from "@itech/shared/assets/logo.png";
 type NavItem = {
   label: string;
   href: string;
+  icon: IconName;
 };
 
+type IconName = "dashboard" | "orders" | "products" | "returns" | "cancellations";
+
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/" },
-  { label: "Orders", href: "/orders" },
-  { label: "Products", href: "/products" },
-  { label: "Returns", href: "/returns" },
-  { label: "Cancellations", href: "/cancellations" },
+  { label: "Dashboard", href: "/", icon: "dashboard" },
+  { label: "Orders", href: "/orders", icon: "orders" },
+  { label: "Products", href: "/products", icon: "products" },
+  { label: "Returns", href: "/returns", icon: "returns" },
+  { label: "Cancellations", href: "/cancellations", icon: "cancellations" },
 ];
 
 function getTitle(pathname: string) {
@@ -26,6 +29,142 @@ function getTitle(pathname: string) {
   if (pathname === "/returns") return "Returns";
   if (pathname === "/cancellations") return "Cancellations";
   return "Dashboard";
+}
+
+function SidebarGlyph({
+  icon,
+  className = "",
+}: {
+  icon: IconName;
+  className?: string;
+}) {
+  const base = `h-4 w-4 ${className}`;
+
+  switch (icon) {
+    case "dashboard":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className={base} aria-hidden="true">
+          <path
+            d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"
+            fill="currentColor"
+          />
+        </svg>
+      );
+    case "orders":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className={base} aria-hidden="true">
+          <path
+            d="M7 4h10l3 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l2-4Zm0 0v4h10V4M9 12h6M9 16h4"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "products":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className={base} aria-hidden="true">
+          <path
+            d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v18M4 7.5l8 4.5 8-4.5"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "returns":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className={base} aria-hidden="true">
+          <path
+            d="M9 7H5v4M5 11a7 7 0 1 0 2-4.9L5 7"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "cancellations":
+    default:
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className={base} aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      );
+  }
+}
+
+function ChevronIcon({
+  expanded,
+  className = "",
+}: {
+  expanded: boolean;
+  className?: string;
+}) {
+  return expanded ? (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="m15 6-6 6 6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="m9 6 6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MobileMenuIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NavLink({
+  item,
+  active,
+  collapsed,
+}: {
+  item: NavItem;
+  active: boolean;
+  collapsed: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      className={`group flex items-center gap-3 rounded-2xl px-3 py-2 transition ${
+        active
+          ? "bg-amber-50 text-[#f59e0b] shadow-[inset_0_0_0_1px_rgba(245,158,11,0.18)]"
+          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+      }`}
+    >
+      <span
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl transition ${
+          active
+            ? "bg-white text-[#f59e0b] shadow-[0_10px_24px_rgba(245,158,11,0.15)]"
+            : "bg-slate-100 text-slate-500 group-hover:bg-white"
+        }`}
+      >
+        <SidebarGlyph icon={item.icon} />
+      </span>
+      {!collapsed ? <span className="truncate text-sm font-semibold">{item.label}</span> : null}
+    </Link>
+  );
 }
 
 export function SellerShell({ children }: { children: ReactNode }) {
@@ -38,8 +177,8 @@ export function SellerShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   const title = useMemo(() => getTitle(pathname), [pathname]);
-  const sidebarWidth = collapsed ? "lg:w-[84px]" : "lg:w-[17rem]";
-  const contentOffset = collapsed ? "lg:pl-[84px]" : "lg:pl-[17rem]";
+  const sidebarWidth = collapsed ? "lg:w-[88px]" : "lg:w-[17rem]";
+  const contentOffset = collapsed ? "lg:pl-[88px]" : "lg:pl-[17rem]";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.14),_transparent_28%),linear-gradient(180deg,_#fffaf2_0%,_#f8fafc_100%)] text-slate-900">
@@ -62,42 +201,28 @@ export function SellerShell({ children }: { children: ReactNode }) {
             ) : null}
           </div>
 
-          <nav className="flex-1 space-y-1 px-3 py-4">
-            {navItems.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+            <nav className="space-y-1">
+              {navItems.map((item) => (
+                <NavLink
                   key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition ${
-                    active
-                      ? "bg-amber-50 text-[#f59e0b] shadow-[inset_0_0_0_1px_rgba(245,158,11,0.18)]"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  }`}
-                >
-                  <span
-                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-sm font-semibold transition ${
-                      active
-                        ? "bg-white text-[#f59e0b] shadow-[0_10px_24px_rgba(245,158,11,0.15)]"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {item.label.slice(0, 1)}
-                  </span>
-                  {!collapsed ? <span className="text-sm font-semibold">{item.label}</span> : null}
-                </Link>
-              );
-            })}
-          </nav>
+                  item={item}
+                  active={pathname === item.href}
+                  collapsed={collapsed}
+                />
+              ))}
+            </nav>
+          </div>
 
-          <div className="border-t border-amber-100 p-3">
+          <div className="shrink-0 border-t border-amber-100 bg-white/95 p-3 backdrop-blur-xl">
             <button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
-              className="hidden h-11 w-full items-center justify-center rounded-2xl border border-amber-100 bg-white text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 lg:inline-flex"
+              className="hidden h-11 w-full items-center justify-center gap-2 rounded-2xl border border-amber-100 bg-white text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 lg:inline-flex"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <span className="text-lg leading-none">{collapsed ? ">" : "<"}</span>
+              <ChevronIcon expanded={!collapsed} className="h-4 w-4" />
+              {!collapsed ? <span className="text-sm font-semibold">Collapse</span> : null}
             </button>
           </div>
         </aside>
@@ -120,16 +245,16 @@ export function SellerShell({ children }: { children: ReactNode }) {
                 className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-100 bg-white text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 lg:hidden"
                 aria-label="Toggle sidebar"
               >
-                <span className="text-sm font-semibold leading-none">Menu</span>
+                <MobileMenuIcon className="h-5 w-5" />
               </button>
 
               <button
                 type="button"
                 onClick={() => setCollapsed((value) => !value)}
                 className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-amber-100 bg-white text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 lg:inline-flex"
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label="Collapse sidebar"
               >
-                <span className="text-lg leading-none">{collapsed ? ">" : "<"}</span>
+                <ChevronIcon expanded={!collapsed} className="h-4 w-4" />
               </button>
 
               <div className="min-w-0 flex-1">
