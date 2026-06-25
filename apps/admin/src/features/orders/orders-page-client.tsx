@@ -22,7 +22,7 @@ export default function OrdersPageClient() {
         <AlertBanner tone="danger" message={state.error} className="rounded-[1.5rem]" />
       ) : null}
 
-      <MetricsGrid className="xl:grid-cols-5">
+      <MetricsGrid className="xl:grid-cols-6">
         <StatCard
           title="Total"
           value={state.stats.total}
@@ -37,6 +37,14 @@ export default function OrdersPageClient() {
           titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-amber-700/80"
           valueClassName="!text-amber-700"
           accentClassName="bg-amber-500"
+        />
+        <StatCard
+          title="Confirmed"
+          value={state.stats.confirmed}
+          className="border-sky-100 bg-sky-50 text-sky-700"
+          titleClassName="!text-xs !uppercase !tracking-[0.2em] !text-sky-700/80"
+          valueClassName="!text-sky-700"
+          accentClassName="bg-sky-500"
         />
         <StatCard
           title="Shipped"

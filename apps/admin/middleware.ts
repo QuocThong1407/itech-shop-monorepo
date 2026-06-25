@@ -7,9 +7,9 @@ const sellerAppUrl = process.env.SELLER_APP_URL ?? "http://localhost:3002";
 const adminAppUrl = process.env.ADMIN_APP_URL ?? "http://localhost:3003";
 
 const roleOrigins = {
-  admin: adminAppUrl,
-  seller: sellerAppUrl,
-  customer: customerAppUrl,
+  ADMIN: adminAppUrl,
+  SELLER: sellerAppUrl,
+  CUSTOMER: customerAppUrl,
 } as const;
 
 export function middleware(request: NextRequest) {
@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (role !== "admin") {
+  if (role !== "ADMIN") {
     return NextResponse.redirect(new URL(APP_BASE_PATHS[role], roleOrigins[role]));
   }
 

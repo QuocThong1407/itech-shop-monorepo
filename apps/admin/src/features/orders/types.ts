@@ -67,6 +67,7 @@ export type OrdersResponse = {
 export type OrderStats = {
   total: number;
   pending: number;
+  confirmed: number;
   shipped: number;
   delivered: number;
   cancelled: number;
