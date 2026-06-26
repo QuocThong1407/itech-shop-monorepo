@@ -1,8 +1,8 @@
 "use client";
 
 import { AlertBanner, MetricsGrid, PageIntro, StatCard } from "@itech/shared";
-import OrdersListSection from "./components/orders-list-section";
 import OrderDetailModal from "./components/order-detail-modal";
+import OrdersListSection from "./components/orders-list-section";
 import { useOrdersPage } from "./hooks/use-orders-page";
 
 export default function OrdersPageClient() {
@@ -11,9 +11,9 @@ export default function OrdersPageClient() {
   return (
     <div className="space-y-6">
       <PageIntro
-        eyebrow="Admin orders"
+        eyebrow="Seller orders"
         title="Orders Control Center"
-        description="Monitor every order across the marketplace, inspect payment state, and coordinate fulfillment decisions from one place."
+        description="Track incoming orders, monitor payment state, and move fulfillment forward from a focused seller workspace."
         className="bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.06)]"
         titleClassName="sm:text-4xl"
       />
@@ -87,7 +87,6 @@ export default function OrdersPageClient() {
         onSearchChange={actions.setSearchText}
         onRefresh={() => void actions.loadOrders()}
         onView={(order) => void actions.handleView(order)}
-        onDelete={(order) => void actions.handleDelete(order)}
         onStatusChange={(order, nextStatus) => void actions.handleStatusChange(order, nextStatus)}
         onPrevPage={() => actions.setPage((current) => Math.max(1, current - 1))}
         onNextPage={() => actions.setPage((current) => Math.min(state.totalPages, current + 1))}
@@ -103,7 +102,6 @@ export default function OrdersPageClient() {
         selectedAddress={state.selectedAddress}
         onClose={() => actions.setDetailOpen(false)}
         onStatusChange={(order, nextStatus) => void actions.handleStatusChange(order, nextStatus)}
-        onDelete={(order) => void actions.handleDelete(order)}
       />
     </div>
   );

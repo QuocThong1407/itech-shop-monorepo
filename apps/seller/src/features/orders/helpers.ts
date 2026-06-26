@@ -1,4 +1,4 @@
-import { formatDateTime, formatMoney } from "../../lib/admin-api";
+import { formatDateTime, formatMoney } from "../../lib/seller-api";
 import { emptyStats } from "./constants";
 import type { OrderRecord, OrderStats } from "./types";
 
@@ -35,6 +35,7 @@ const allowedStatusTransitions: Record<string, string[]> = {
 export function getAvailableStatusOptions(status?: string) {
   const current = normalizeStatus(status);
   const nextOptions = allowedStatusTransitions[current] ?? [];
+
   return [current, ...nextOptions].filter((value, index, array) => {
     return array.indexOf(value) === index;
   });
