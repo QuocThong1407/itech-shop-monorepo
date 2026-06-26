@@ -8,20 +8,30 @@ const LIMIT = 10;
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; hasReturn?: string }>;
 }) {
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, hasReturn } = await searchParams;
   const status = (statusParam as OrderStatus | undefined) ?? undefined;
+  const isReturning = hasReturn === "true";
 
   const { orders, pagination } = await getOrders({
     page: 1,
     limit: LIMIT,
-    status,
+    status: isReturning ? "DELIVERED" : status,
   });
 
-  // Empty state tổng: chỉ hiện khi KHÔNG lọc gì cả mà vẫn không có đơn nào.
-  // Nếu đang lọc theo status mà rỗng, OrdersList tự xử lý empty state riêng cho tab đó.
-  const isFullyEmpty = !status && pagination.total === 0;
+  const filteredOrders = isReturning
+    ? orders.filter((o) => {
+        const r = o.Return?.[0];
+        return r && ["APPROVED", "COMPLETED"].includes(r.status);
+      })
+    : orders;
+
+  const activeTab: OrderStatus | "ALL" | "RETURNED" = isReturning
+    ? "RETURNED"
+    : (status ?? "ALL");
+
+  const isFullyEmpty = !status && !isReturning && pagination.total === 0;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_#d1fae5_0%,_#f0fdf4_40%,_#ffffff_100%)] px-4 py-10">
@@ -65,12 +75,14 @@ export default async function OrdersPage({
           </div>
         ) : (
           <OrdersList
-            key={status ?? "all"}
-            initialOrders={orders}
-            initialTotal={pagination.total}
+            key={activeTab}
+            initialOrders={filteredOrders}
+            initialTotal={
+              isReturning ? filteredOrders.length : pagination.total
+            }
             initialPage={pagination.page}
             limit={LIMIT}
-            status={status ?? "ALL"}
+            status={activeTab}
           />
         )}
       </div>

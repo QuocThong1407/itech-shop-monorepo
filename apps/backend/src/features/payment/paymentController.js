@@ -101,18 +101,37 @@ const vnpayIPN = async (req, res) => {
 const vnpayReturn = async (req, res) => {
   try {
     const result = await paymentService.handleVNPayReturn(req.query);
-
-    // Redirect về frontend với kết quả
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.CUSTOMER_APP_URL || "http://localhost:3001";
     const redirectUrl = `${frontendUrl}/payment/result?success=${result.success}&orderId=${result.orderId}&message=${encodeURIComponent(result.message)}`;
-
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("VNPay return error:", error);
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.CUSTOMER_APP_URL || "http://localhost:3001";
     const redirectUrl = `${frontendUrl}/payment/result?success=false&message=${encodeURIComponent(error.message || "Payment failed")}`;
-
     res.redirect(redirectUrl);
+  }
+};
+
+// paymentController.js - trong repayOrder
+const repayOrder = async (req, res) => {
+  try {
+    const { orderId, returnUrl } = req.body;
+    const userId = req.user.userId; 
+    const ipAddr =
+      req.headers["x-forwarded-for"] ||
+      req.connection.remoteAddress ||
+      req.ip;
+
+    const result = await paymentService.repayOrder({
+      orderId,
+      userId, 
+      returnUrl,
+      ipAddr,
+    });
+
+    successResponse(res, 200, result, "Repay URL generated"); // ✅ dùng helper cho nhất quán
+  } catch (err) {
+    errorResponse(res, err.status || 500, err.message || "Failed to repay");
   }
 };
 
@@ -121,4 +140,5 @@ module.exports = {
   getPaymentByOrderId,
   vnpayIPN,
   vnpayReturn,
+  repayOrder,
 };

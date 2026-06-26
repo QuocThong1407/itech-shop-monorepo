@@ -140,6 +140,17 @@ const getAllCoupons = async (req, res) => {
     errorResponse(res, 500, error.message || "Failed to get coupons");
   }
 };
+
+const getAvailableCoupons = async (req, res) => {
+  try {
+    const orderAmount = parseFloat(req.query.orderAmount) || 0;
+    const result = await couponService.getAvailableCoupons(orderAmount);
+    successResponse(res, 200, result);
+  } catch (error) {
+    errorResponse(res, 500, error.message || "Failed to get coupons");
+  }
+};
+
 module.exports = {
   createCoupon,
   validateCoupon,
@@ -148,4 +159,5 @@ module.exports = {
   getCouponById,
   deleteCoupon,
   getAllCoupons,
+  getAvailableCoupons 
 };

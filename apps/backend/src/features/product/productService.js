@@ -482,6 +482,19 @@ const updateProduct = async (productId, updates, userId, files) => {
         "Cannot manually update stockQuantity for products with variants. Stock is auto-calculated from variant quantities.",
     };
   }
+
+// validate discountPercentage: phải là số trong khoảng 0-100
+  if (updates.discountPercentage !== undefined) {
+    const discount = Number(updates.discountPercentage);
+    if (Number.isNaN(discount) || discount < 0 || discount > 100) {
+      throw {
+        status: 400,
+        message: "discountPercentage must be a number between 0 and 100",
+      };
+    }
+    updates.discountPercentage = discount;
+  }
+
   // các field admin được phép update
   const allowedFields = [
     "name",
@@ -490,6 +503,7 @@ const updateProduct = async (productId, updates, userId, files) => {
     "stockQuantity",
     "categoryId",
     "images",
+    "discountPercentage",
   ];
 
   allowedFields.forEach((field) => {
@@ -567,30 +581,42 @@ const updateProductStock = async (productId, stockQuantity, userId) => {
 
 // Helper function to calculate review stats for a product
 const getProductReviewStats = async (productId) => {
-  // Get all order items for this product's variants
+  // Lấy tất cả variants của product
+  const { data: variants } = await supabase
+    .from("ProductVariant")
+    .select("id")
+    .eq("productId", productId);
+
+  if (!variants || variants.length === 0) {
+    return { averageRating: 0, reviewCount: 0, soldCount: 0 };
+  }
+
+  const variantIds = variants.map((v) => v.id);
+
+  // Lấy orderItems của các variants này, chỉ lấy đơn DELIVERED
   const { data: orderItems } = await supabase
     .from("OrderItem")
-    .select(
-      `
+    .select(`
       id,
       quantity,
-      ProductVariant!OrderItem_productVariantId_fkey(
-        productId
-      )
-    `,
-    )
-    .eq("ProductVariant.productId", productId);
+      Order!OrderItem_orderId_fkey(status)
+    `)
+    .in("productVariantId", variantIds);
 
   if (!orderItems || orderItems.length === 0) {
     return { averageRating: 0, reviewCount: 0, soldCount: 0 };
   }
 
+  // Chỉ tính soldCount từ đơn DELIVERED
+  const deliveredItems = orderItems.filter(
+    (oi) => oi.Order?.status === "DELIVERED"
+  );
+  const soldCount = deliveredItems.reduce(
+    (sum, oi) => sum + (oi.quantity || 0), 0
+  );
+
+  // Lấy reviews từ tất cả orderItemIds (không chỉ delivered)
   const orderItemIds = orderItems.map((oi) => oi.id);
-
-  // Calculate sold count from order items
-  const soldCount = orderItems.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
-
-  // Get all reviews for these order items
   const { data: reviews } = await supabase
     .from("Review")
     .select("rating")
@@ -639,7 +665,7 @@ const getAllProducts = async ({
   let query = supabase
     .from("Product")
     .select(
-      `id, name, description, price, stockQuantity, images, variantTypes, variantOptions, createdAt, updatedAt,
+      `id, name, description, price, discountPercentage, stockQuantity, images, variantTypes, variantOptions, createdAt, updatedAt,
       createdBy, categoryId, Category(id, name), Seller(id, User(id, username, email))`,
       { count: "exact" },
     )
@@ -706,7 +732,7 @@ const getProductById = async (productId) => {
   const { data: product, error } = await supabase
     .from("Product")
     .select(
-      `id, name, description, price, stockQuantity, images, variantTypes, variantOptions, is_deleted, createdAt, updatedAt, createdBy, categoryId,
+      `id, name, description, price, discountPercentage, stockQuantity, images, variantTypes, variantOptions, is_deleted, createdAt, updatedAt, createdBy, categoryId,
       Category!Product_categoryId_fkey(
         id,
         name,
@@ -736,7 +762,6 @@ const getProductById = async (productId) => {
     .eq("id", productId)
     .eq("is_deleted", false)
     .single();
-
   if (error) throw error;
   if (!product) throw { status: 404, message: "Product not found" };
 

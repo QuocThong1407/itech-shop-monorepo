@@ -46,8 +46,13 @@ export function StatusBadge({
   children,
 }: StatusBadgeProps) {
   return (
-    <Badge tone={tone} className={`gap-2 px-3 py-1 text-xs font-semibold ${className}`}>
-      {withDot ? <span className={`h-2 w-2 rounded-full bg-current ${dotClassName}`} /> : null}
+    <Badge
+      tone={tone}
+      className={`gap-2 px-3 py-1 text-xs font-semibold ${className}`}
+    >
+      {withDot ? (
+        <span className={`h-2 w-2 rounded-full bg-current ${dotClassName}`} />
+      ) : null}
       {children}
     </Badge>
   );
@@ -72,7 +77,9 @@ export function AlertBanner({
   className = "",
 }: AlertBannerProps) {
   return (
-    <div className={`rounded-2xl border px-4 py-3 text-sm ${alertToneClasses[tone]} ${className}`}>
+    <div
+      className={`rounded-2xl border px-4 py-3 text-sm ${alertToneClasses[tone]} ${className}`}
+    >
       {message}
     </div>
   );
@@ -92,7 +99,8 @@ const buttonVariantClasses: Record<ButtonVariant, string> = {
     "bg-slate-950 text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] hover:bg-slate-800",
   secondary:
     "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
-  danger: "bg-rose-600 border border-rose-200 text-rose-700 shadow-[0_14px_30px_rgba(225,29,72,0.18)] hover:bg-rose-700",
+  danger:
+    "bg-rose-600 border border-rose-200 text-rose-700 shadow-[0_14px_30px_rgba(225,29,72,0.18)] hover:bg-rose-700",
   ghost: "bg-slate-100 text-slate-700 hover:bg-slate-200",
 };
 
@@ -123,7 +131,12 @@ export type IconButtonProps = ButtonProps & {
   srLabel?: string;
 };
 
-export function IconButton({ srLabel, children, className = "", ...props }: IconButtonProps) {
+export function IconButton({
+  srLabel,
+  children,
+  className = "",
+  ...props
+}: IconButtonProps) {
   return (
     <Button size="icon" className={className} {...props}>
       {srLabel ? <span className="sr-only">{srLabel}</span> : null}
@@ -142,7 +155,7 @@ export type LogoutButtonProps = {
 export function LogoutButton({
   backendBaseUrl = "http://localhost:5000/api",
   redirectTo = "/login",
-  label = "Sign out",
+  label = "Đăng xuất",
   className = "",
 }: LogoutButtonProps) {
   const [loading, setLoading] = React.useState(false);
@@ -205,10 +218,16 @@ export function StatCard({
       </p>
       <div className="mt-3 flex items-end justify-between gap-3">
         <div>
-          <p className={`text-3xl font-semibold tracking-tight text-slate-950 ${valueClassName}`}>
+          <p
+            className={`text-3xl font-semibold tracking-tight text-slate-950 ${valueClassName}`}
+          >
             {value}
           </p>
-          {note ? <p className={`mt-1 text-sm text-slate-500 ${noteClassName}`}>{note}</p> : null}
+          {note ? (
+            <p className={`mt-1 text-sm text-slate-500 ${noteClassName}`}>
+              {note}
+            </p>
+          ) : null}
         </div>
         <div className={`h-3 w-3 rounded-full ${accentClassName}`} />
       </div>
@@ -265,8 +284,18 @@ export function PageIntro({
     <section
       className={`overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ${className}`}
     >
-      <div className={aside ? layoutClassName : contentClassName || layoutClassName}>
-        <div className={aside ? `space-y-4 ${contentClassName}` : `max-w-3xl ${contentClassName}`}>
+      <div
+        className={
+          aside ? layoutClassName : contentClassName || layoutClassName
+        }
+      >
+        <div
+          className={
+            aside
+              ? `space-y-4 ${contentClassName}`
+              : `max-w-3xl ${contentClassName}`
+          }
+        >
           <p
             className={`text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC] ${eyebrowClassName}`}
           >
@@ -278,11 +307,15 @@ export function PageIntro({
             >
               {title}
             </h2>
-            <p className={`mt-3 text-sm leading-6 text-slate-600 ${descriptionClassName}`}>
+            <p
+              className={`mt-3 text-sm leading-6 text-slate-600 ${descriptionClassName}`}
+            >
               {description}
             </p>
           </div>
-          {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
+          {actions ? (
+            <div className="flex flex-wrap gap-3">{actions}</div>
+          ) : null}
         </div>
         {aside ? <div>{aside}</div> : null}
       </div>
@@ -307,7 +340,9 @@ export function PanelHeader({
   className = "",
 }: PanelHeaderProps) {
   return (
-    <div className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between ${className}`}>
+    <div
+      className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between ${className}`}
+    >
       <div>
         {eyebrow ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#008ECC]">
@@ -315,7 +350,9 @@ export function PanelHeader({
           </p>
         ) : null}
         <p className="text-sm font-semibold text-slate-900">{title}</p>
-        {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+        {description ? (
+          <p className="mt-1 text-sm text-slate-500">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>
@@ -337,9 +374,13 @@ export function InfoField({
 }: InfoFieldProps) {
   return (
     <div className={`rounded-2xl bg-slate-50 px-4 py-3 ${className}`}>
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </p>
       <div className="mt-2 text-sm font-semibold text-slate-900">{value}</div>
-      {helper ? <div className="mt-1 text-xs text-slate-500">{helper}</div> : null}
+      {helper ? (
+        <div className="mt-1 text-xs text-slate-500">{helper}</div>
+      ) : null}
     </div>
   );
 }
@@ -349,14 +390,23 @@ export type MetricsGridProps = React.PropsWithChildren<{
 }>;
 
 export function MetricsGrid({ className = "", children }: MetricsGridProps) {
-  return <section className={`grid gap-4 md:grid-cols-2 xl:grid-cols-4 ${className}`}>{children}</section>;
+  return (
+    <section
+      className={`grid gap-4 md:grid-cols-2 xl:grid-cols-4 ${className}`}
+    >
+      {children}
+    </section>
+  );
 }
 
 export type FilterToolbarProps = React.PropsWithChildren<{
   className?: string;
 }>;
 
-export function FilterToolbar({ className = "", children }: FilterToolbarProps) {
+export function FilterToolbar({
+  className = "",
+  children,
+}: FilterToolbarProps) {
   return (
     <div
       className={`flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:justify-between ${className}`}
@@ -385,7 +435,11 @@ export function FormField({
   return (
     <label className={`grid gap-2 ${className}`}>
       {label ? (
-        <span className={`text-sm font-semibold text-slate-700 ${labelClassName}`}>{label}</span>
+        <span
+          className={`text-sm font-semibold text-slate-700 ${labelClassName}`}
+        >
+          {label}
+        </span>
       ) : null}
       {children}
       {error ? (
@@ -405,9 +459,14 @@ type BaseFieldProps = {
 const baseFieldClassName =
   "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:bg-white";
 
-export type TextInputProps = React.InputHTMLAttributes<HTMLInputElement> & BaseFieldProps;
+export type TextInputProps = React.InputHTMLAttributes<HTMLInputElement> &
+  BaseFieldProps;
 
-export function TextInput({ className = "", invalid = false, ...props }: TextInputProps) {
+export function TextInput({
+  className = "",
+  invalid = false,
+  ...props
+}: TextInputProps) {
   return (
     <input
       className={`${baseFieldClassName} ${
@@ -420,9 +479,14 @@ export function TextInput({ className = "", invalid = false, ...props }: TextInp
   );
 }
 
-export type TextAreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & BaseFieldProps;
+export type TextAreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> &
+  BaseFieldProps;
 
-export function TextArea({ className = "", invalid = false, ...props }: TextAreaProps) {
+export function TextArea({
+  className = "",
+  invalid = false,
+  ...props
+}: TextAreaProps) {
   return (
     <textarea
       className={`${baseFieldClassName} min-h-[120px] resize-y ${
@@ -435,9 +499,15 @@ export function TextArea({ className = "", invalid = false, ...props }: TextArea
   );
 }
 
-export type SelectInputProps = React.SelectHTMLAttributes<HTMLSelectElement> & BaseFieldProps;
+export type SelectInputProps = React.SelectHTMLAttributes<HTMLSelectElement> &
+  BaseFieldProps;
 
-export function SelectInput({ className = "", invalid = false, children, ...props }: SelectInputProps) {
+export function SelectInput({
+  className = "",
+  invalid = false,
+  children,
+  ...props
+}: SelectInputProps) {
   return (
     <select
       className={`${baseFieldClassName} ${
@@ -452,9 +522,14 @@ export function SelectInput({ className = "", invalid = false, children, ...prop
   );
 }
 
-export type SearchInputProps = React.InputHTMLAttributes<HTMLInputElement> & BaseFieldProps;
+export type SearchInputProps = React.InputHTMLAttributes<HTMLInputElement> &
+  BaseFieldProps;
 
-export function SearchInput({ className = "", invalid = false, ...props }: SearchInputProps) {
+export function SearchInput({
+  className = "",
+  invalid = false,
+  ...props
+}: SearchInputProps) {
   return (
     <TextInput
       type="search"
@@ -536,7 +611,9 @@ export function TabPills({
           </button>
         );
       })}
-      {actions ? <div className="ml-auto flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="ml-auto flex flex-wrap gap-2">{actions}</div>
+      ) : null}
     </div>
   );
 }
@@ -564,8 +641,14 @@ export function TableCard({
       className={`overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)] ${className}`}
     >
       {title || description || actions ? (
-        <div className={`border-b border-slate-200 px-5 py-5 ${headerClassName}`}>
-          <PanelHeader title={title || ""} description={description} actions={actions} />
+        <div
+          className={`border-b border-slate-200 px-5 py-5 ${headerClassName}`}
+        >
+          <PanelHeader
+            title={title || ""}
+            description={description}
+            actions={actions}
+          />
         </div>
       ) : null}
       <div className={bodyClassName}>{children}</div>
@@ -585,7 +668,9 @@ export function TableShell({
 }: TableShellProps) {
   return (
     <div className={`px-5 pb-5 ${className}`}>
-      <div className={`overflow-hidden rounded-[1.5rem] border border-slate-200 ${innerClassName}`}>
+      <div
+        className={`overflow-hidden rounded-[1.5rem] border border-slate-200 ${innerClassName}`}
+      >
         {children}
       </div>
     </div>
@@ -613,13 +698,25 @@ export function TablePagination({
 }: TablePaginationProps) {
   return (
     <div className={`flex items-center justify-between gap-3 ${className}`}>
-      <Button className="!rounded-full !shadow-none" variant="secondary" size="md" onClick={onPrevious} disabled={page <= 1}>
+      <Button
+        className="!rounded-full !shadow-none"
+        variant="secondary"
+        size="md"
+        onClick={onPrevious}
+        disabled={page <= 1}
+      >
         {previousLabel}
       </Button>
       <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
         Page {page} of {totalPages}
       </span>
-      <Button className="!rounded-full !shadow-none" variant="secondary" size="md" onClick={onNext} disabled={page >= totalPages}>
+      <Button
+        className="!rounded-full !shadow-none"
+        variant="secondary"
+        size="md"
+        onClick={onNext}
+        disabled={page >= totalPages}
+      >
         {nextLabel}
       </Button>
     </div>
@@ -645,7 +742,9 @@ export function DetailSection({
   return (
     <SurfaceCard className={`${className}`}>
       <PanelHeader title={title} description={description} actions={actions} />
-      <div className={bodyClassName ? `mt-4 ${bodyClassName}` : "mt-4"}>{children}</div>
+      <div className={bodyClassName ? `mt-4 ${bodyClassName}` : "mt-4"}>
+        {children}
+      </div>
     </SurfaceCard>
   );
 }
@@ -815,8 +914,12 @@ export function ConfirmDialog({
           <h3 className="mt-2 break-words text-2xl font-semibold tracking-tight text-slate-950">
             {title}
           </h3>
-          <p className="mt-3 break-words text-sm leading-6 text-slate-600">{description}</p>
-          {children ? <div className="mt-4 min-w-0 break-words">{children}</div> : null}
+          <p className="mt-3 break-words text-sm leading-6 text-slate-600">
+            {description}
+          </p>
+          {children ? (
+            <div className="mt-4 min-w-0 break-words">{children}</div>
+          ) : null}
         </div>
         <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-4">
           <div className="flex items-center justify-end gap-3">

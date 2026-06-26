@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getProducts, getCategories } from "@/lib/api";
-
+import { ProductCard } from "@/components/ProductCard";
 interface SearchParams {
   page?: string;
   search?: string;
@@ -65,9 +65,53 @@ export default async function ProductsPage({
         </p>
       )}
 
+      {/* ── Mobile filter bar ── */}
+      <div className="flex md:hidden flex-wrap gap-2">
+        <Link
+          href={buildHref(sp, { category: undefined, page: "1" })}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+            !sp.category
+              ? "bg-blue-600 text-white border-blue-600"
+              : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
+          }`}
+        >
+          Tất cả
+        </Link>
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            href={buildHref(sp, { category: cat.id, page: "1" })}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+              sp.category === cat.id
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
+            }`}
+          >
+            {cat.name}
+          </Link>
+        ))}
+        {/* Sort pills */}
+        <div className="w-full flex gap-2 mt-1">
+          {SORT_OPTIONS.map((opt) => (
+            <Link
+              key={opt.value}
+              href={buildHref(sp, { sort: opt.value || undefined, page: "1" })}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                (sp.sort ?? "") === opt.value
+                  ? "bg-zinc-800 text-white border-zinc-800"
+                  : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
+              }`}
+            >
+              {opt.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Sidebar + Grid ── */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
-        {/* ── Sidebar ── */}
-        <aside className="w-full md:w-56 shrink-0 rounded-2xl border border-zinc-200 bg-white shadow-sm p-4 flex flex-col gap-6">
+        {/* ── Sidebar — desktop only ── */}
+        <aside className="hidden md:flex w-56 shrink-0 rounded-2xl border border-zinc-200 bg-white shadow-sm p-4 flex-col gap-6">
           {/* Category filter */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
@@ -156,53 +200,13 @@ export default async function ProductsPage({
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {products.map((product) => (
-                <Link
+                <ProductCard
                   key={product.id}
-                  href={`/products/${product.id}`}
-                  className="group rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
-                >
-                  {/* Image */}
-                  <div className="relative aspect-square bg-zinc-100 overflow-hidden">
-                    {product.images?.[0] ? (
-                      <Image
-                        src={product.images[0]}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-zinc-300">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-12 w-12"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={1}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-4 flex flex-col gap-1 flex-1">
-                    <p className="text-sm font-semibold text-zinc-800 line-clamp-2 leading-snug">
-                      {product.name}
-                    </p>
-                    <p className="mt-auto pt-2 text-emerald-600 font-bold text-base">
-                      {formatVND(product.price)}
-                    </p>
-                  </div>
-                </Link>
+                  product={product}
+                  variant="home"
+                />
               ))}
             </div>
           )}
@@ -210,7 +214,6 @@ export default async function ProductsPage({
           {/* ── Pagination ── */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-1 pt-2">
-              {/* Prev */}
               {page > 1 && (
                 <Link
                   href={buildHref(sp, { page: String(page - 1) })}
@@ -219,7 +222,6 @@ export default async function ProductsPage({
                   ‹
                 </Link>
               )}
-
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <Link
                   key={p}
@@ -233,8 +235,6 @@ export default async function ProductsPage({
                   {p}
                 </Link>
               ))}
-
-              {/* Next */}
               {page < totalPages && (
                 <Link
                   href={buildHref(sp, { page: String(page + 1) })}

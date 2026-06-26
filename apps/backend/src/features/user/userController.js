@@ -122,30 +122,24 @@ const updateMe = async (req, res) => {
   }
 };
 
-const getPfp = async (req, res) => {
+const getCustomerProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const result = await userService.getPfp(userId);
+    const result = await userService.getCustomerProfile(userId);
     successResponse(res, 200, result);
   } catch (error) {
-    console.error("Get pfp error:", error);
-    errorResponse(res, 500, "Failed to get profile picture");
+    errorResponse(res, 500, error.message || "Failed to get customer profile");
   }
 };
 
-const uploadPfp = async (req, res) => {
+const updateCustomerProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-    
-    if (!req.file) {
-      return errorResponse(res, 400, "No file uploaded");
-    }
-
-    const result = await userService.uploadPfp(userId, req.file);
-    successResponse(res, 200, result, "Profile picture updated successfully");
+    const { phone, gender, birthday } = req.body;
+    const result = await userService.updateCustomerProfile(userId, { phone, gender, birthday });
+    successResponse(res, 200, result, "Profile updated");
   } catch (error) {
-    console.error("Upload pfp error:", error);
-    errorResponse(res, 400, error.message || "Failed to upload profile picture");
+    errorResponse(res, 400, error.message || "Failed to update profile");
   }
 };
 
@@ -158,6 +152,6 @@ module.exports = {
   deleteUser,
   getMe,
   updateMe,
-  getPfp,
-  uploadPfp,
+  getCustomerProfile,
+  updateCustomerProfile
 };

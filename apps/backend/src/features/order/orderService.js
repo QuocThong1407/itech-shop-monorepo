@@ -4,94 +4,57 @@ const orderHelper = require("./orderHelper");
 const membershipService = require("../membership/membershipService");
 const membershipRefundHandler = require("../membership/membershipRefundHandler");
 // tạo order mới từ cart của customer
-const createOrder = async (userId, addressId, paymentMethod = "COD") => {
+const createOrder = async (userId, addressId, paymentMethod = "COD", buyNowVariantId = null) => {
   const timestamp = new Date().toISOString();
 
-  // validate dữ liệu đầu vào
   orderHelper.validatePaymentMethod(paymentMethod);
   const customer = await orderHelper.getCustomerByUserId(userId);
   await orderHelper.validateAddressOwnership(addressId, customer.id);
 
-  // lấy cart và kiểm tra item
   const { cart, cartItems } = await orderHelper.getCartWithItems(customer.id);
-  orderHelper.validateCartItems(cartItems);
+  
+  const itemsToOrder = buyNowVariantId
+    ? cartItems.filter(item => item.ProductVariant.id === buyNowVariantId)
+    : cartItems;
 
-  // tính tổng tiền và tồn kho cần trừ
-  const {
-    subtotal,
-    discountPercentage,
-    discountAmount,
-    finalAmount,
-    membershipTier,
-    variantUpdates,
-  } = await orderHelper.calculateOrderDetailsWithDiscount(
-    cartItems,
-    customer.id,
-  );
+  orderHelper.validateCartItems(itemsToOrder);
+
+  const { subtotal, discountPercentage, discountAmount, finalAmount, membershipTier, variantUpdates } =
+    await orderHelper.calculateOrderDetailsWithDiscount(itemsToOrder, customer.id);
 
   let order = null;
   let createdItemIds = [];
   const updatedProductIds = new Set();
 
   try {
-    order = await orderHelper.createOrderRecord(
-      customer.id,
-      addressId,
-      timestamp,
-    );
+    order = await orderHelper.createOrderRecord(customer.id, addressId, timestamp);
 
-    // trừ tồn kho cho từng variant
     for (const update of variantUpdates) {
-      await orderHelper.deductStockAtomic(
-        update.variantId,
-        update.quantityToDeduct,
-        timestamp,
-      );
+      await orderHelper.deductStockAtomic(update.variantId, update.quantityToDeduct, timestamp);
       updatedProductIds.add(update.productId);
     }
 
-    // cập nhật lại stock tổng của product
     for (const productId of updatedProductIds) {
       await orderHelper.updateProductStock(productId, timestamp);
     }
 
-    // tạo order item
-    const createdItems = await orderHelper.createOrderItems(
-      order.id,
-      cartItems,
-      timestamp,
-    );
-    createdItemIds = createdItems.map((item) => item.id);
+    const createdItems = await orderHelper.createOrderItems(order.id, itemsToOrder, timestamp);
+    createdItemIds = createdItems.map(item => item.id);
 
-    // tạo payment
-    await orderHelper.createPayment(
-      order.id,
-      finalAmount,
-      paymentMethod,
-      timestamp,
-    );
+    await orderHelper.createPayment(order.id, finalAmount, paymentMethod, timestamp);
 
-    // xóa cart sau khi đặt hàng
-    await orderHelper.clearCart(cart.id);
-
-    // trả về chi tiết order vừa tạo
-    return await getOrderById(order.id, userId, "CUSTOMER");
-  } catch (error) {
-    // rollback nếu có lỗi
-    if (order) {
-      await orderHelper.rollbackOrder(
-        order.id,
-        createdItemIds,
-        variantUpdates,
-        timestamp,
-      );
+    if (buyNowVariantId) {
+      await orderHelper.removeCartItem(cart.id, buyNowVariantId);
+    } else {
+      await orderHelper.clearCart(cart.id);
     }
 
-    throw {
-      status: 500,
-      message:
-        error.message || "Failed to create order. All changes rolled back.",
-    };
+    return await getOrderById(order.id, userId, "CUSTOMER");
+  } catch (error) {
+    if (order) {
+      await orderHelper.rollbackOrder(order.id, createdItemIds, variantUpdates, timestamp);
+    }
+    throw { status: 500, message: error.message || "Failed to create order. All changes rolled back." };
   }
 };
 
@@ -101,47 +64,55 @@ const getMyOrders = async (userId, { page = 1, limit = 10, status }) => {
 
   // query orders theo customer
   let query = supabase
-    .from("Order")
-    .select(
-      `
+  .from("Order")
+  .select(
+    `
+    id,
+    orderDate,
+    status,
+    createdAt,
+    updatedAt,
+    Address!Order_addressId_fkey(
       id,
-      orderDate,
-      status,
-      createdAt,
-      updatedAt,
-      Address!Order_addressId_fkey(
+      phoneNumber,
+      address,
+      street,
+      ward,
+      district,
+      province
+    ),
+    OrderItem(
+      id,
+      quantity,
+      ProductVariant!OrderItem_productVariantId_fkey(
         id,
-        phoneNumber,
-        address,
-        street,
-        ward,
-        district,
-        province
-      ),
-      OrderItem(
-        id,
-        quantity,
-        ProductVariant!OrderItem_productVariantId_fkey(
+        variantAttributes,
+        priceAdjustment,
+        Product!ProductVariant_productId_fkey(
           id,
-          variantAttributes,
-          priceAdjustment,
-          Product!ProductVariant_productId_fkey(
-            id,
-            name,
-            price,
-            images
-          )
+          name,
+          price,
+          images
         )
-      ),
-      Payment(
-        id,
-        amount,
-        method,
-        status
       )
-    `,
-      { count: "exact" },
+    ),
+    Payment(
+      id,
+      amount,
+      method,
+      status
+    ),
+    Cancellation!Cancellation_orderId_fkey(
+      id,
+      status
+    ),
+    Return!Return_orderId_fkey(
+      id,
+      status
     )
+  `,
+    { count: "exact" },
+  )
     .eq("customerId", customer.id);
 
   // filter theo trạng thái
@@ -310,62 +281,70 @@ const getAllOrders = async (
 // lấy chi tiết một order
 const getOrderById = async (orderId, userId, userRole) => {
   const { data: order, error } = await supabase
-    .from("Order")
-    .select(
-      `
+  .from("Order")
+  .select(
+    `
+    id,
+    orderDate,
+    status,
+    createdAt,
+    updatedAt,
+    customerId,
+    Customer!Order_customerId_fkey(
       id,
-      orderDate,
-      status,
-      createdAt,
-      updatedAt,
-      customerId,
-      Customer!Order_customerId_fkey(
+      userId,
+      User!Customer_userId_fkey(
         id,
-        userId,
-        User!Customer_userId_fkey(
-          id,
-          username,
-          email
-        )
-      ),
-      Address!Order_addressId_fkey(
-        id,
-        phoneNumber,
-        address,
-        street,
-        ward,
-        district,
-        province
-      ),
-      OrderItem(
-        id,
-        quantity,
-        ProductVariant!OrderItem_productVariantId_fkey(
-          id,
-          variantAttributes,
-          priceAdjustment,
-          images,
-          Product!ProductVariant_productId_fkey(
-            id,
-            name,
-            description,
-            price,
-            images,
-            createdBy
-          )
-        )
-      ),
-      Payment(
-        id,
-        amount,
-        method,
-        status,
-        paymentDate
+        username,
+        email
       )
-    `,
+    ),
+    Address!Order_addressId_fkey(
+      id,
+      phoneNumber,
+      address,
+      street,
+      ward,
+      district,
+      province
+    ),
+    OrderItem(
+      id,
+      quantity,
+      ProductVariant!OrderItem_productVariantId_fkey(
+        id,
+        variantAttributes,
+        priceAdjustment,
+        images,
+        Product!ProductVariant_productId_fkey(
+          id,
+          name,
+          description,
+          price,
+          images,
+          createdBy
+        )
+      )
+    ),
+    Payment(
+      id,
+      amount,
+      method,
+      status,
+      paymentDate
+    ),
+    Cancellation!Cancellation_orderId_fkey(
+      id,
+      status
+    ),
+    Return!Return_orderId_fkey(
+      id,
+      status
     )
-    .eq("id", orderId)
-    .single();
+  `,
+  )
+  .eq("id", orderId)
+  .single();
 
   if (error) throw error;
   if (!order) throw { status: 404, message: "Order not found" };

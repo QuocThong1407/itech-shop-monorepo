@@ -6,9 +6,10 @@ import { updateProfileAction } from "@/lib/actions";
 
 interface Props {
   initialUsername: string;
+  initialEmail: string;
 }
 
-export default function ProfileForm({ initialUsername }: Props) {
+export default function ProfileForm({ initialUsername, initialEmail }: Props) {
   const [username, setUsername] = useState(initialUsername);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -44,6 +45,18 @@ export default function ProfileForm({ initialUsername }: Props) {
     <div className="space-y-4">
       <div>
         <label className="block text-xs font-medium text-zinc-500 mb-1">
+          Email
+        </label>
+        <input
+          type="email"
+          value={initialEmail}
+          disabled
+          className="w-full rounded-xl border border-zinc-100 bg-zinc-100 px-4 py-2.5 text-sm text-zinc-400 cursor-not-allowed"
+        />
+        <p className="mt-1 text-xs text-zinc-400">Email không thể thay đổi.</p>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-zinc-500 mb-1">
           Tên đăng nhập
         </label>
         <input
@@ -54,12 +67,10 @@ export default function ProfileForm({ initialUsername }: Props) {
           placeholder="Nhập tên đăng nhập"
         />
       </div>
-
       {error && <p className="text-xs text-red-500">{error}</p>}
       {success && (
         <p className="text-xs text-emerald-600">Cập nhật thành công!</p>
       )}
-
       <button
         onClick={handleSave}
         disabled={isPending}

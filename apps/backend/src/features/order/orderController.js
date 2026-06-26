@@ -7,7 +7,7 @@ const {
 
 const createOrder = async (req, res) => {
   try {
-    const { addressId, paymentMethod } = req.body;
+    const { addressId, paymentMethod, buyNowVariantId } = req.body; // 👈 thêm
     const customerId = req.user.userId;
 
     if (!addressId) {
@@ -18,6 +18,7 @@ const createOrder = async (req, res) => {
       customerId,
       addressId,
       paymentMethod,
+      buyNowVariantId ?? null,
     );
     successResponse(res, 201, result, "Order created successfully");
   } catch (error) {

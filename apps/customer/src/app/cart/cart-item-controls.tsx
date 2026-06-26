@@ -7,6 +7,7 @@ interface CartItemControlsProps {
   itemId: string;
   quantity: number;
   max: number;
+  onDelete: (itemId: string) => void;
 }
 
 const API_BASE =
@@ -34,6 +35,7 @@ export default function CartItemControls({
   itemId,
   quantity,
   max,
+  onDelete,
 }: CartItemControlsProps) {
   const router = useRouter();
   const [qty, setQty] = useState(quantity);
@@ -78,7 +80,9 @@ export default function CartItemControls({
       setLoading(true);
       await deleteItem(itemId);
       router.refresh();
+      onDelete(itemId);
     } catch {
+    } finally {
       setLoading(false);
     }
   };
