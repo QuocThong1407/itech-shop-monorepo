@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const HOST_APP_URL =
   process.env.NEXT_PUBLIC_HOST_APP_URL ?? "http://localhost:3000";
@@ -14,6 +15,7 @@ interface Variant {
 interface Props {
   productId: string;
   basePrice: number;
+  discountPercentage?: number;
   variants: Variant[];
   variantTypes: string[];
   variantOptions: Record<string, string[]>;
@@ -32,9 +34,15 @@ function formatVND(price: number) {
   }).format(price);
 }
 
+function applyDiscount(price: number, discountPercentage: number) {
+  if (discountPercentage <= 0) return price;
+  return price * (1 - discountPercentage / 100);
+}
+
 export default function AddToCart({
   productId,
   basePrice,
+  discountPercentage = 0,
   variants,
   variantTypes,
   variantOptions,
@@ -44,6 +52,7 @@ export default function AddToCart({
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
+  const router = useRouter();
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -122,13 +131,12 @@ export default function AddToCart({
     });
   };
 
-  const handleAddToCart = async () => {
-    // Chặn nếu chưa đăng nhập
+  const addToCart = async (): Promise<boolean> => {
     if (!isLoggedIn) {
       window.dispatchEvent(new CustomEvent("auth:required"));
-      return;
+      return false;
     }
-    if (!matchedVariant) return;
+    if (!matchedVariant) return false;
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/cart/items`, {
@@ -140,13 +148,31 @@ export default function AddToCart({
           quantity,
         }),
       });
+      if (res.status === 401) {
+        window.dispatchEvent(new CustomEvent("auth:required"));
+        return false;
+      }
       if (!res.ok) throw new Error();
-      showToast("success", "Đã thêm vào giỏ hàng!");
+      return true;
     } catch {
       showToast("error", "Không thể thêm vào giỏ. Vui lòng thử lại.");
+      return false;
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddToCart = async () => {
+    const success = await addToCart();
+    if (success) showToast("success", "Đã thêm vào giỏ hàng!");
+  };
+
+  const handleBuyNow = async () => {
+    const success = await addToCart();
+    if (success && matchedVariant)
+      router.push(
+        `/checkout?buyNow=true&variantId=${matchedVariant.id}&qty=${quantity}`,
+      );
   };
 
   const hasVariants = variantTypes.length > 0;
@@ -154,40 +180,73 @@ export default function AddToCart({
   return (
     <div className="space-y-5">
       {/* Giá động */}
+      {/* Giá động */}
       {hasVariants && (
         <div className="py-3 px-4 rounded-lg bg-blue-50 border border-blue-100">
           {allSelected ? (
-            <span className="text-3xl font-extrabold text-blue-600">
-              {formatVND(displayPrice)}
-            </span>
+            <div className="flex flex-col gap-0.5">
+              {discountPercentage > 0 && (
+                <span className="text-sm text-zinc-400 line-through">
+                  {formatVND(displayPrice)}
+                </span>
+              )}
+              <span
+                className={`text-3xl font-extrabold ${
+                  discountPercentage > 0 ? "text-red-600" : "text-blue-600"
+                }`}
+              >
+                {formatVND(applyDiscount(displayPrice, discountPercentage))}
+              </span>
+            </div>
           ) : previewPrice !== null ? (
-            <span className="text-3xl font-extrabold text-blue-600">
-              {formatVND(previewPrice)}
-            </span>
+            <div className="flex flex-col gap-0.5">
+              {discountPercentage > 0 && (
+                <span className="text-sm text-zinc-400 line-through">
+                  {formatVND(previewPrice)}
+                </span>
+              )}
+              <span
+                className={`text-3xl font-extrabold ${
+                  discountPercentage > 0 ? "text-red-600" : "text-blue-600"
+                }`}
+              >
+                {formatVND(applyDiscount(previewPrice, discountPercentage))}
+              </span>
+            </div>
           ) : (
             // Range price khi các option có giá khác nhau
-            <span className="text-2xl font-extrabold text-blue-600">
+            <span
+              className={`text-2xl font-extrabold ${
+                discountPercentage > 0 ? "text-red-600" : "text-blue-600"
+              }`}
+            >
               {formatVND(
-                Math.min(
-                  ...variants
-                    .filter((v) =>
-                      Object.entries(selected).every(
-                        ([k, val]) => v.variantAttributes[k] === val,
-                      ),
-                    )
-                    .map((v) => basePrice + (v.priceAdjustment ?? 0)),
+                applyDiscount(
+                  Math.min(
+                    ...variants
+                      .filter((v) =>
+                        Object.entries(selected).every(
+                          ([k, val]) => v.variantAttributes[k] === val,
+                        ),
+                      )
+                      .map((v) => basePrice + (v.priceAdjustment ?? 0)),
+                  ),
+                  discountPercentage,
                 ),
               )}{" "}
               —{" "}
               {formatVND(
-                Math.max(
-                  ...variants
-                    .filter((v) =>
-                      Object.entries(selected).every(
-                        ([k, val]) => v.variantAttributes[k] === val,
-                      ),
-                    )
-                    .map((v) => basePrice + (v.priceAdjustment ?? 0)),
+                applyDiscount(
+                  Math.max(
+                    ...variants
+                      .filter((v) =>
+                        Object.entries(selected).every(
+                          ([k, val]) => v.variantAttributes[k] === val,
+                        ),
+                      )
+                      .map((v) => basePrice + (v.priceAdjustment ?? 0)),
+                  ),
+                  discountPercentage,
                 ),
               )}
             </span>
@@ -247,7 +306,9 @@ export default function AddToCart({
                             isSelected ? "text-blue-600" : "text-zinc-500"
                           }`}
                         >
-                          {formatVND(optionPrice)}
+                          {formatVND(
+                            applyDiscount(optionPrice, discountPercentage),
+                          )}
                         </span>
                       )}
                     </span>
@@ -288,46 +349,46 @@ export default function AddToCart({
         </div>
       </div>
 
-      {/* Add to cart button */}
-      <button
-        type="button"
-        onClick={handleAddToCart}
-        disabled={loading || !allSelected || !matchedVariant}
-        className="
-          w-full py-3 px-6 rounded-[1.25rem] bg-blue-600 hover:bg-blue-500
-          text-white font-semibold text-sm tracking-wide
-          transition-all shadow-sm hover:shadow-blue-200 hover:shadow-md
-          disabled:opacity-60 disabled:cursor-not-allowed
-          flex items-center justify-center gap-2
-        "
-      >
-        {loading ? (
-          <>
+      {/* Add to cart + buy now buttons */}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={loading || !allSelected || !matchedVariant}
+          className="
+            flex-1 py-3 px-4 rounded-[1.25rem] border-2 border-blue-600
+            text-blue-600 font-semibold text-sm tracking-wide
+            transition-all hover:bg-blue-50
+            disabled:opacity-60 disabled:cursor-not-allowed
+            flex items-center justify-center gap-2
+          "
+        >
+          {loading ? (
+            <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+          ) : (
+            "Thêm vào giỏ"
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          disabled={loading || !allSelected || !matchedVariant}
+          className="
+            flex-1 py-3 px-4 rounded-[1.25rem] bg-blue-600 hover:bg-blue-500
+            text-white font-semibold text-sm tracking-wide
+            transition-all shadow-sm hover:shadow-blue-200 hover:shadow-md
+            disabled:opacity-60 disabled:cursor-not-allowed
+            flex items-center justify-center gap-2
+          "
+        >
+          {loading ? (
             <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Đang thêm...
-          </>
-        ) : !allSelected ? (
-          "Vui lòng chọn phân loại"
-        ) : (
-          <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9M9 21h6"
-              />
-            </svg>
-            Thêm vào giỏ hàng
-          </>
-        )}
-      </button>
+          ) : (
+            "Mua ngay"
+          )}
+        </button>
+      </div>
 
       {/* Toast */}
       {toast && (

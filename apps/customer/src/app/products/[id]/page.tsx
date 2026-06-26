@@ -7,7 +7,7 @@ import AddToCart from "./add-to-cart";
 import ProductGallery from "./product-gallery";
 import ProductDescription from "./product-description";
 import ProductReviews from "./product-reviews";
-
+import { getProduct } from "@/lib/api";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
 
@@ -24,6 +24,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  discountPercentage?: number;
   images: string[];
   averageRating: number;
   reviewCount?: number;
@@ -32,25 +33,6 @@ interface Product {
   Category?: { id: string; name: string };
   variants?: Variant[];
   ProductVariant?: Variant[];
-}
-
-async function getProduct(id: string): Promise<Product | null> {
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken")?.value;
-  try {
-    const res = await fetch(`${API_BASE}/products/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const body = await res.json();
-    return body.data ?? body;
-  } catch {
-    return null;
-  }
 }
 
 export async function generateMetadata({
@@ -109,8 +91,12 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = await getProduct(id);
-  if (!product) notFound();
+  let product;
+  try {
+    product = await getProduct(id);
+  } catch {
+    notFound();
+  }
 
   // Check login
   const cookieStore = await cookies();
@@ -128,9 +114,6 @@ export default async function ProductDetailPage({
   })();
 
   const variantTypes: string[] = (product as any).variantTypes ?? [];
-
-  console.log("PRODUCT KEYS:", Object.keys(product));
-  console.log("DESC:", product.description);
   const variants = product.ProductVariant ?? product.variants ?? [];
   const category = product.Category;
   return (
@@ -234,6 +217,7 @@ export default async function ProductDetailPage({
               <AddToCart
                 productId={product.id}
                 basePrice={product.price}
+                discountPercentage={product.discountPercentage ?? 0}
                 variants={(variants as any[]).map((v) => ({
                   id: v.id,
                   variantAttributes: v.variantAttributes,
@@ -242,6 +226,7 @@ export default async function ProductDetailPage({
                 }))}
                 variantTypes={variantTypes}
                 variantOptions={variantOptions}
+                isLoggedIn={isLoggedIn}
               />
             </div>
           </div>

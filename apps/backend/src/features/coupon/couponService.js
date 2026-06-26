@@ -309,6 +309,46 @@ const getAllCoupons = async ({ page = 1, limit = 10, promotionId, search }) => {
   };
 };
 
+// couponService.js - thêm function mới
+const getAvailableCoupons = async (orderAmount) => {
+  const { data: coupons, error } = await supabase
+    .from("Coupon")
+    .select(`
+      id,
+      code,
+      discountPercentage,
+      maxUsage,
+      usageCount,
+      Promotion!Coupon_promotionId_fkey(
+        id,
+        name,
+        status,
+        startDate,
+        endDate
+      )
+    `);
+
+  if (error) throw error;
+
+  const available = (coupons || []).filter((c) => {
+    const p = c.Promotion;
+    if (!p || p.status !== "ACTIVE") return false;
+    if (new Date(p.startDate) > new Date()) return false;
+    if (new Date(p.endDate) < new Date()) return false;
+    if (c.usageCount >= c.maxUsage) return false;  // hết lượt dùng
+    return true;
+  });
+
+  return available.map((c) => ({
+    id: c.id,
+    code: c.code,
+    discountPercentage: c.discountPercentage,
+    discountAmount: parseFloat(((orderAmount * c.discountPercentage) / 100).toFixed(0)),
+    promotionName: c.Promotion.name,
+    remainingUsage: c.maxUsage - c.usageCount,
+  }));
+};
+
 module.exports = {
   createCoupon,
   validateCoupon,
@@ -317,4 +357,5 @@ module.exports = {
   getCouponById,
   deleteCoupon,
   getAllCoupons,
+  getAvailableCoupons,
 };

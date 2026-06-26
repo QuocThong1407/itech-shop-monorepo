@@ -607,6 +607,17 @@ const calculateOrderDetailsWithDiscount = async (cartItems, customerId) => {
   };
 };
 
+const removeCartItem = async (cartId, variantId) => {
+  const { error } = await supabase
+    .from("CartItem")
+    .delete()
+    .eq("cartId", cartId)
+    .eq("productVariantId", variantId);
+
+  if (error) throw error;
+};
+
+
 module.exports = {
   validatePaymentMethod,
   getCustomerByUserId,
@@ -631,4 +642,5 @@ module.exports = {
   checkSellerOrderOwnership,
   getOrderIdsForSeller,
   calculateOrderDetailsWithDiscount,
+  removeCartItem,
 };

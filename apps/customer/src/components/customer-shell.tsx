@@ -19,6 +19,9 @@ const ACCOUNT_LINKS = [
   { href: "/profile", label: "Tài khoản" },
 ];
 
+const CUSTOMER_APP_URL =
+  process.env.NEXT_PUBLIC_CUSTOMER_APP_URL ?? "http://localhost:3001";
+
 export function CustomerShell({
   children,
   cartCount = 0,
@@ -36,6 +39,8 @@ export function CustomerShell({
     process.env.NEXT_PUBLIC_HOST_APP_URL ?? "http://localhost:3000";
   const [showAuthModal, setShowAuthModal] = useState(false);
   useEffect(() => {
+    if (!mobileOpen) return;
+
     function handleClick(e: MouseEvent) {
       if (
         mobileMenuRef.current &&
@@ -44,8 +49,16 @@ export function CustomerShell({
         setMobileOpen(false);
       }
     }
-    if (mobileOpen) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+
+    // setTimeout để skip click event hiện tại (click mở menu)
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleClick);
+    };
   }, [mobileOpen]);
 
   useEffect(() => {
@@ -84,17 +97,14 @@ export function CustomerShell({
                 className="h-8 w-auto"
                 priority
               />
-              <span className="hidden sm:block text-sm font-bold text-zinc-800">
+              <span className="hidden lg:block text-sm font-bold text-zinc-800">
                 iTech<span className="text-blue-600">Mobile</span>
               </span>
             </Link>
 
             {/* Search */}
-            <form
-              onSubmit={handleSearch}
-              className="hidden md:flex flex-1 max-w-sm"
-            >
-              <div className="relative w-full">
+            <form onSubmit={handleSearch} className="flex flex-1 min-w-0">
+              <div className="relative w-full min-w-0">
                 <input
                   type="text"
                   value={search}
@@ -126,7 +136,7 @@ export function CustomerShell({
             </form>
 
             {/* Meta: hotline + user + cart */}
-            <div className="ml-auto flex items-center gap-4">
+            <div className="flex-shrink-0 flex items-center gap-4">
               {/* Hotline — ẩn trên mobile nhỏ */}
               <div className="hidden lg:flex items-center gap-1.5 text-xs text-zinc-500">
                 <svg
@@ -174,7 +184,7 @@ export function CustomerShell({
                       </span>
                     )}
                   </div>
-                  <span className="hidden sm:block text-xs">Giỏ hàng</span>
+                  <span className="hidden lg:block text-xs">Giỏ hàng</span>
                 </Link>
               ) : (
                 <button
@@ -202,25 +212,26 @@ export function CustomerShell({
                 </button>
               )}
               {/* User + logout — desktop */}
-              <div className="hidden md:flex items-center gap-2 border-l border-zinc-200 pl-4">
+              <div className="hidden md:flex items-center gap-2">
                 {userName ? (
                   <>
-                    <svg>...</svg>
-                    <span>{userName}</span>
-                    <LogoutButton redirectTo={`${HOST_APP_URL}/login`} />
+                    <span className="text-sm text-zinc-700 hidden lg:block">
+                      {userName}
+                    </span>
+                    <LogoutButton redirectTo={`${CUSTOMER_APP_URL}/customer`} />
                   </>
                 ) : (
                   <>
                     <a
                       href={`${HOST_APP_URL}/login`}
-                      className="text-sm font-medium text-zinc-700 hover:text-blue-600 transition"
+                      className="text-sm font-medium text-zinc-700 hover:text-blue-600 transition whitespace-nowrap"
                     >
                       Đăng nhập
                     </a>
                     <span className="text-zinc-300">|</span>
                     <a
                       href={`${HOST_APP_URL}/register`}
-                      className="text-sm font-medium text-blue-600 hover:text-blue-700 transition"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 transition whitespace-nowrap"
                     >
                       Đăng ký
                     </a>
@@ -404,14 +415,14 @@ export function CustomerShell({
               <span className="text-sm text-zinc-700 font-medium">
                 {userName ?? "Khách"}
               </span>
-              <LogoutButton redirectTo={`${HOST_APP_URL}/login`} />
+              <LogoutButton redirectTo={`${CUSTOMER_APP_URL}/customer`} />
             </div>
           </div>
         )}
       </header>
 
       {/* Page content */}
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 w-full min-w-0 mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-6">
         {children}
       </main>
 

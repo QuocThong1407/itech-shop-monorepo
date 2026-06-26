@@ -143,7 +143,10 @@ export default function OrdersList({
       setIsLoadingMore(false);
     }
   }
-
+  console.log(
+    "orders ids:",
+    orders.map((o) => o.id),
+  );
   return (
     <div>
       {/* Status tabs */}

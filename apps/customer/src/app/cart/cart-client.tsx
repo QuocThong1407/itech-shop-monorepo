@@ -235,6 +235,14 @@ export default function CartClient({
                         itemId={item.id}
                         quantity={item.quantity}
                         max={pv.quantity}
+                        onDelete={(id) => {
+                          setItems((prev) => prev.filter((i) => i.id !== id));
+                          setChecked((prev) => {
+                            const next = new Set(prev);
+                            next.delete(id);
+                            return next;
+                          });
+                        }}
                       />
                     </div>
                   </div>

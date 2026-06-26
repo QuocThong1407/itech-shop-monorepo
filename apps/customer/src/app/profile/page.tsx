@@ -37,35 +37,31 @@ function fullAddress(a: {
 
 const TIER_META: Record<
   string,
-  { label: string; color: string; bg: string; ring: string; emoji: string }
+  { label: string; color: string; bg: string; border: string }
 > = {
   BRONZE: {
     label: "Đồng",
     color: "text-amber-700",
     bg: "bg-amber-50",
-    ring: "ring-amber-300",
-    emoji: "🥉",
+    border: "border-amber-300",
   },
   SILVER: {
     label: "Bạc",
     color: "text-zinc-500",
     bg: "bg-zinc-50",
-    ring: "ring-zinc-300",
-    emoji: "🥈",
+    border: "border-zinc-300",
   },
   GOLD: {
     label: "Vàng",
     color: "text-yellow-600",
     bg: "bg-yellow-50",
-    ring: "ring-yellow-300",
-    emoji: "🥇",
+    border: "border-yellow-300",
   },
   PLATINUM: {
     label: "Bạch Kim",
     color: "text-sky-600",
     bg: "bg-sky-50",
-    ring: "ring-sky-300",
-    emoji: "💎",
+    border: "border-sky-300",
   },
 };
 
@@ -113,10 +109,10 @@ export default async function ProfilePage({
     : null;
 
   const BENEFIT_LABEL: Record<string, string> = {
-    DiscountPercentage: "Giảm giá",
-    FreeShipping: "Miễn phí vận chuyển",
-    PrioritySupport: "Hỗ trợ ưu tiên",
-    EarlyAccess: "Truy cập sớm",
+    discountPercentage: "Giảm giá",
+    freeShipping: "Miễn phí vận chuyển",
+    prioritySupport: "Hỗ trợ ưu tiên",
+    earlyAccess: "Truy cập sớm",
   };
 
   return (
@@ -134,9 +130,9 @@ export default async function ProfilePage({
             <p className="text-sm text-zinc-500 truncate">{user.email}</p>
             {membership && tier && (
               <span
-                className={`mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${tier.bg} ${tier.color} ${tier.ring}`}
+                className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${tier.bg} ${tier.color} ${tier.border}`}
               >
-                {tier.emoji} {tier.label}
+                {tier.label}
               </span>
             )}
           </div>
@@ -235,44 +231,32 @@ export default async function ProfilePage({
               <>
                 {/* Current tier card */}
                 <div
-                  className={`rounded-[1.5rem] border bg-white/80 shadow-sm backdrop-blur-sm p-6 ring-1 ${tier.ring}`}
+                  className={`rounded-[1.5rem] border-2 bg-white/80 shadow-sm backdrop-blur-sm p-6 ${tier.border}`}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-3xl">{tier.emoji}</span>
-                    <div>
-                      <p className="text-xs text-zinc-400 uppercase tracking-wide">
-                        Hạng hiện tại
-                      </p>
-                      <p className={`text-xl font-semibold ${tier.color}`}>
-                        {tier.label}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-xs text-zinc-400 uppercase tracking-widest mb-1">
+                    Hạng thành viên
+                  </p>
+                  <p className={`text-2xl font-bold mb-5 ${tier.color}`}>
+                    {tier.label}
+                  </p>
 
-                  {/* Spent */}
-                  <div className="flex justify-between text-sm mb-3">
+                  <div className="flex justify-between text-sm mb-4">
                     <span className="text-zinc-500">Tổng chi tiêu</span>
                     <span className="font-semibold text-zinc-800">
                       {fmt(membership.spent)}
                     </span>
                   </div>
 
-                  {/* Progress to next tier */}
                   {membership.tierInfo.nextTier ? (
                     <>
                       <div className="flex justify-between text-xs text-zinc-400 mb-1.5">
                         <span>
-                          Tiến độ lên hạng {membership.tierInfo.nextTier}
-                        </span>
-                        <span>
-                          {fmt(membership.tierInfo.spentToNextTier)} còn lại
+                          Còn {fmt(membership.tierInfo.spentToNextTier)} để lên
+                          hạng tiếp
                         </span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
+                      <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
                         {(() => {
-                          // tính % dựa trên khoảng từ tier hiện tại đến tier tiếp theo
-                          // backend trả spentToNextTier = nextTier.min - spent
-                          // → pct = spent / nextTier.min * 100 (approximate)
                           const nextMin =
                             membership.spent +
                             membership.tierInfo.spentToNextTier;
@@ -285,7 +269,7 @@ export default async function ProfilePage({
                               : 0;
                           return (
                             <div
-                              className={`h-full rounded-full transition-all ${tier.color.replace("text-", "bg-")}`}
+                              className={`h-full rounded-full transition-all ${tier.bg.replace("50", "400")}`}
                               style={{ width: `${pct}%` }}
                             />
                           );
@@ -293,8 +277,8 @@ export default async function ProfilePage({
                       </div>
                     </>
                   ) : (
-                    <p className="text-xs text-emerald-600 font-medium mt-1">
-                      🎉 Bạn đang ở hạng cao nhất!
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Bạn đang ở hạng cao nhất
                     </p>
                   )}
                 </div>
@@ -303,24 +287,28 @@ export default async function ProfilePage({
                 {membership.tierInfo.benefits &&
                   Object.keys(membership.tierInfo.benefits).length > 0 && (
                     <div className="rounded-[1.5rem] border border-zinc-200 bg-white/80 shadow-sm backdrop-blur-sm p-6">
-                      <h2 className="text-sm font-medium text-zinc-500 mb-3 uppercase tracking-wide">
+                      <h2 className="text-xs font-medium text-zinc-500 mb-3 uppercase tracking-widest">
                         Quyền lợi hạng {tier.label}
                       </h2>
-                      <ul className="space-y-2">
+                      <ul className="divide-y divide-zinc-100">
                         {Object.entries(membership.tierInfo.benefits).map(
                           ([k, v]) => (
                             <li
                               key={k}
-                              className="flex items-start gap-2 text-sm text-zinc-700"
+                              className="flex items-center justify-between py-2.5 text-sm"
                             >
-                              <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">
-                                ✓
-                              </span>
-                              <span>
+                              <span className="text-zinc-600">
                                 {BENEFIT_LABEL[k] ?? k}
-                                {typeof v === "boolean"
-                                  ? ""
-                                  : `: ${v}${k === "DiscountPercentage" ? "%" : ""}`}
+                              </span>
+                              <span className="font-medium text-zinc-800">
+                                {k === "discountPercentage" &&
+                                typeof v === "number"
+                                  ? `${v}%`
+                                  : typeof v === "boolean"
+                                    ? v
+                                      ? "Có"
+                                      : "Không"
+                                    : String(v)}
                               </span>
                             </li>
                           ),

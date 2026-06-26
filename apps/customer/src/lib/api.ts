@@ -21,16 +21,33 @@ export interface ProductVariant {
   stock: number;
 }
 
+// lib/api.ts — sửa interface Product
 export interface Product {
   id: string;
   name: string;
   price: number;
+  discountPercentage?: number;
   images: string[];
   description: string;
   variants: ProductVariant[];
   categoryId: string;
   category?: Category;
   createdAt?: string;
+  Category?: { id: string; name: string };
+  ProductVariant?: {
+    id: string;
+    variantAttributes: Record<string, string>;
+    priceAdjustment?: number;
+    quantity?: number;
+    images?: string[];
+  }[];
+  averageRating: number;
+  reviewCount?: number;
+  soldCount?: number;
+  stockQuantity?: number;
+  variantTypes?: string[];
+  variantOptions?: Record<string, string[]>;
+  is_deleted?: boolean;
 }
 
 export interface Category {
@@ -160,7 +177,7 @@ export async function getProducts(params: {
   const qs = query.toString();
   const res = await fetch(
     `${BASE_URL}/products${qs ? `?${qs}` : ""}`,
-    { cache: "no-store" }
+    { next: { revalidate: 60 }}
   );
 
   if (!res.ok) throw new Error("Failed to fetch products");
@@ -193,14 +210,14 @@ export async function getProducts(params: {
 }
 
 export async function getProduct(id: string): Promise<Product> {
-  const res = await fetch(`${BASE_URL}/products/${id}`, { cache: "no-store" });
+   const res = await fetch(`${BASE_URL}/products/${id}`, { next: { revalidate: 60 } });
   if (!res.ok) throw new Error("Product not found");
   const body = await res.json();
   return body.data ?? body;
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const res = await fetch(`${BASE_URL}/categories`, { cache: "no-store" });
+  const res = await fetch(`${BASE_URL}/categories`, { next: { revalidate: 60 } });
   if (!res.ok) return [];
   const body = await res.json();
   const raw = body.data ?? body;
@@ -217,27 +234,16 @@ export async function getOrders(params: {
   status?: OrderStatus;
 } = {}): Promise<PaginatedOrders> {
   const token = await getAuthToken();
-  const query = new URLSearchParams();
+  console.log("getOrders token:", token);
+  const client = getApiClient(token);
 
+  const query = new URLSearchParams();
   if (params.page !== undefined) query.set("page", String(params.page));
   if (params.limit !== undefined) query.set("limit", String(params.limit));
   if (params.status) query.set("status", params.status);
-
   const qs = query.toString();
-  const res = await fetch(
-  `${BASE_URL}/orders/me${qs ? `?${qs}` : ""}`, 
-  {
-    cache: "no-store",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  }
-);
 
-  if (!res.ok) {
-  const body = await res.text().catch(() => "");
-  throw new Error(`Orders fetch failed: ${res.status} ${body}`);
-}
-  const body = await res.json();
-  const raw = body.data ?? body;
+  const raw = await unwrap<any>(client.get(`/orders/me${qs ? `?${qs}` : ""}`));
   return {
     orders: raw.orders ?? [],
     pagination: raw.pagination ?? { page: 1, limit: 10, total: 0, totalPages: 0 },
@@ -308,13 +314,24 @@ export interface Promotion {
 
 export async function getActivePromotions(): Promise<Promotion[]> {
   const res = await fetch(
-    `${BASE_URL}/promotions?status=ACTIVE&limit=5`,
-    { cache: "no-store" }
+    `${BASE_URL}/promotions?limit=5`,
+    {next: { revalidate: 60 }}
   );
   if (!res.ok) return [];
   const body = await res.json();
   const raw = body.data ?? body;
-  return raw.promotions ?? [];
+  
+  const now = new Date();
+  const all: Promotion[] = raw.promotions ?? [];
+  
+  // Lọc những promotion đang trong thời gian hiệu lực
+  // bất kể status thủ công trong DB
+  return all.filter(p => {
+    if (p.status === "INACTIVE") return false; // admin tắt thủ công → không hiện
+    const start = new Date(p.startDate);
+    const end = new Date(p.endDate);
+    return now >= start && now <= end;
+  });
 }
 
 export interface MembershipTierInfo {

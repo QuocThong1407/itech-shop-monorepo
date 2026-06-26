@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { CartItem, Address } from "@/lib/api";
 
@@ -8,6 +8,7 @@ interface Props {
   cartItems: CartItem[];
   cartTotal: number;
   addresses: Address[];
+  buyNowVariantId?: string;
 }
 
 interface CouponValidateResponse {
@@ -51,6 +52,7 @@ export default function CheckoutForm({
   cartItems,
   cartTotal,
   addresses,
+  buyNowVariantId,
 }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
@@ -67,13 +69,63 @@ export default function CheckoutForm({
     district: "",
     province: "",
   });
-
+  interface AvailableCoupon {
+    id: string;
+    code: string;
+    discountPercentage: number;
+    discountAmount: number;
+    promotionName: string;
+    remainingUsage: number;
+  }
   // Coupon
+  const [availableCoupons, setAvailableCoupons] = useState<AvailableCoupon[]>(
+    [],
+  );
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [showCouponList, setShowCouponList] = useState(false);
+
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
   const [validatedCoupon, setValidatedCoupon] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (step === 2) {
+      fetchAvailableCoupons();
+    }
+  }, [step]);
+
+  async function fetchAvailableCoupons() {
+    setCouponsLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/coupons/available?orderAmount=${cartTotal}`,
+        { credentials: "include" },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableCoupons(data.data ?? data);
+      }
+    } catch {
+    } finally {
+      setCouponsLoading(false);
+    }
+  }
+
+  function handleSelectCoupon(coupon: AvailableCoupon) {
+    setCouponCode(coupon.code);
+    setDiscount(coupon.discountAmount);
+    setValidatedCoupon(coupon.code);
+    setCouponError(null);
+    setShowCouponList(false);
+  }
+
+  function handleRemoveCoupon() {
+    setCouponCode("");
+    setDiscount(0);
+    setValidatedCoupon(null);
+  }
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
@@ -160,7 +212,11 @@ export default function CheckoutForm({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addressId, paymentMethod }),
+        body: JSON.stringify({
+          addressId,
+          paymentMethod,
+          ...(buyNowVariantId && { buyNowVariantId }),
+        }),
       });
       if (!res.ok) {
         setSubmitError(
@@ -186,7 +242,7 @@ export default function CheckoutForm({
           body: JSON.stringify({
             orderId,
             method: "VNPAY",
-            returnUrl: `${window.location.origin}/payment/result`,
+            returnUrl: `http://localhost:5000/api/payments/vnpay/return`,
           }),
         });
         if (payRes.ok) {
@@ -542,73 +598,173 @@ export default function CheckoutForm({
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: 12 }}
         >
-          {/* Coupon */}
+          {/* Coupon — thay cái cũ bằng cái này */}
           <div className="cps-card" style={{ padding: 16 }}>
-            <input
-              type="text"
-              placeholder="Nhập mã giảm giá (chỉ áp dụng 1 lần)"
-              value={couponCode}
-              onChange={(e) => {
-                setCouponCode(e.target.value);
-                if (validatedCoupon) {
-                  setValidatedCoupon(null);
-                  setDiscount(0);
-                }
-                setCouponError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleValidateCoupon();
-                }
-              }}
-              className="cps-input"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                fontSize: 13,
-                border: "1.5px solid #e5e7eb",
-                borderRadius: 6,
-                boxSizing: "border-box",
-                color: "#111827",
-              }}
-            />
             <div
               style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginTop: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                marginBottom: 12,
               }}
+              className="cps-red"
             >
-              <button
-                type="button"
-                onClick={handleValidateCoupon}
-                disabled={couponLoading || !couponCode.trim()}
-                className="cps-bg-red"
+              Mã giảm giá
+            </div>
+
+            {validatedCoupon ? (
+              /* Đã chọn coupon — hiện badge + nút xóa */
+              <div
                 style={{
-                  padding: "8px 20px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#fff",
-                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  border: "1.5px solid #86efac",
                   borderRadius: 6,
-                  cursor: "pointer",
-                  opacity: !couponCode.trim() || couponLoading ? 0.5 : 1,
-                  transition: "background 0.2s",
                 }}
               >
-                {couponLoading ? "Đang kiểm tra..." : "Áp dụng"}
-              </button>
-            </div>
-            {couponError && (
-              <p style={{ marginTop: 6, fontSize: 12, color: "#dc2626" }}>
-                {couponError}
-              </p>
-            )}
-            {validatedCoupon && discount > 0 && (
-              <p style={{ marginTop: 6, fontSize: 12, color: "#16a34a" }}>
-                ✓ Mã <b>{validatedCoupon}</b> hợp lệ — giảm {fmt(discount)}
-              </p>
+                <div>
+                  <span
+                    style={{ fontSize: 14, fontWeight: 700, color: "#16a34a" }}
+                  >
+                    🎉 {validatedCoupon}
+                  </span>
+                  <span
+                    style={{ fontSize: 12, color: "#16a34a", marginLeft: 8 }}
+                  >
+                    — Giảm {fmt(discount)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  style={{
+                    fontSize: 12,
+                    color: "#dc2626",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            ) : (
+              /* Chưa chọn — hiện nút mở danh sách */
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowCouponList((v) => !v)}
+                  disabled={couponsLoading}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    border: "1.5px dashed #e5e7eb",
+                    borderRadius: 6,
+                    background: "#fafafa",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    color: "#374151",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>
+                    {couponsLoading
+                      ? "Đang tải mã..."
+                      : availableCoupons.length > 0
+                        ? `Chọn mã giảm giá (${availableCoupons.length} mã)`
+                        : "Không có mã giảm giá phù hợp"}
+                  </span>
+                  {!couponsLoading && availableCoupons.length > 0 && (
+                    <span>{showCouponList ? "▲" : "▼"}</span>
+                  )}
+                </button>
+
+                {showCouponList && availableCoupons.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {availableCoupons.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => handleSelectCoupon(c)}
+                        style={{
+                          padding: "10px 14px",
+                          border: "1.5px solid #e5e7eb",
+                          borderRadius: 6,
+                          background: "#fff",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          transition: "border-color 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.borderColor = "#e53935")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.borderColor = "#e5e7eb")
+                        }
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: "#111827",
+                            }}
+                          >
+                            {c.code}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#6b7280",
+                              marginTop: 2,
+                            }}
+                          >
+                            {c.promotionName} · Còn {c.remainingUsage} lượt
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            textAlign: "right",
+                            flexShrink: 0,
+                            marginLeft: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: "#e53935",
+                            }}
+                          >
+                            -{fmt(c.discountAmount)}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                            ({c.discountPercentage}%)
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import { Badge } from "@itech/shared";
 import OrderActions from "./order-actions";
+import { getPaymentLabel, getPaymentColor } from "@/lib/payment-label";
+import { CreditCard } from "lucide-react";
+import RepayButton from "./repay-button";
 import {
   getOrder,
   getOrderTotal,
@@ -134,6 +137,10 @@ export default async function OrderDetailPage({
   const timeline = buildTimeline(order);
   const total = getOrderTotal(order);
 
+  const payment = Array.isArray(order.Payment)
+    ? order.Payment[0]
+    : order.Payment;
+
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_#d1fae5_0%,_#f0fdf4_40%,_#ffffff_100%)] px-4 py-10">
       <div className="mx-auto max-w-2xl">
@@ -213,6 +220,51 @@ export default async function OrderDetailPage({
             {order.Address.province}
           </p>
         </div>
+
+        {/* Payment info */}
+        {payment && (
+          <div className="mb-4 rounded-[1.5rem] border border-zinc-200 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-emerald-500" />
+              <h2 className="text-sm font-semibold text-zinc-700">
+                Thông tin thanh toán
+              </h2>
+            </div>
+            <div className="flex items-center justify-between">
+              <span
+                className="text-sm font-medium"
+                style={{ color: getPaymentColor(payment) }}
+              >
+                {getPaymentLabel(payment)}
+              </span>
+              {payment.method !== "COD" && payment.status !== "SUCCESS" && (
+                <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-medium text-amber-600">
+                  Chưa thanh toán
+                </span>
+              )}
+              {payment.status === "SUCCESS" && (
+                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-medium text-emerald-600">
+                  Đã thanh toán
+                </span>
+              )}
+              {payment.method === "COD" && (
+                <span className="rounded-full bg-zinc-50 border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-500">
+                  Thanh toán khi nhận hàng
+                </span>
+              )}
+            </div>
+
+            {/* ↓ Thêm đoạn này */}
+            {payment.method === "VNPAY" &&
+              payment.status !== "SUCCESS" &&
+              !["CANCELLED", "DELIVERED"].includes(order.status) && (
+                <RepayButton
+                  orderId={order.id}
+                  createdAt={payment.createdAt ?? order.orderDate}
+                />
+              )}
+          </div>
+        )}
 
         {/* Timeline */}
         <div className="mb-4 rounded-[1.5rem] border border-zinc-200 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-sm">

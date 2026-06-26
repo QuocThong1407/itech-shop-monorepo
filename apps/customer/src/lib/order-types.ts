@@ -54,6 +54,7 @@ export interface OrderPayment {
   method: "COD" | "VNPAY" | "STRIPE";
   status: "PENDING" | "SUCCESS" | "FAILED";
   paymentDate?: string;
+  createdAt?: string;
 }
 
 export interface Order {

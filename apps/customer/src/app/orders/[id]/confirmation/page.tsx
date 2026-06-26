@@ -2,6 +2,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
+import { getPaymentLabel, getPaymentColor } from "@/lib/payment-label";
+import RepayButton from "../repay-button";
+
 import {
   getOrder,
   getOrderTotal,
@@ -26,12 +29,6 @@ function formatDate(iso: string) {
     minute: "2-digit",
   }).format(new Date(iso));
 }
-
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  COD: "Thanh toán khi nhận hàng (COD)",
-  VNPAY: "Đã thanh toán qua VNPay",
-  STRIPE: "Đã thanh toán qua Stripe",
-};
 
 async function fetchOrder(id: string): Promise<Order | null> {
   try {
@@ -95,10 +92,13 @@ export default async function OrderConfirmationPage({
             <Row label="Phí vận chuyển" value="Miễn phí" />
             <Row
               label="Phương thức thanh toán"
-              value={
-                payment
-                  ? (PAYMENT_METHOD_LABEL[payment.method] ?? payment.method)
-                  : "—"
+              value={getPaymentLabel(payment)}
+              valueClassName={
+                payment?.method !== "COD" && payment?.status === "SUCCESS"
+                  ? "text-emerald-600 font-semibold"
+                  : payment?.method !== "COD" && payment?.status !== "SUCCESS"
+                    ? "text-amber-600 font-semibold"
+                    : ""
               }
             />
             <Row
@@ -108,6 +108,13 @@ export default async function OrderConfirmationPage({
               valueClassName="text-base font-bold text-emerald-600"
             />
           </dl>
+          {/* Nút thanh toán lại — chỉ hiện khi VNPAY chưa thanh toán */}
+          {payment?.method === "VNPAY" && payment?.status !== "SUCCESS" && (
+            <RepayButton
+              orderId={order.id}
+              createdAt={payment.createdAt ?? order.orderDate}
+            />
+          )}
         </div>
 
         {/* Shipping address */}
@@ -143,7 +150,7 @@ export default async function OrderConfirmationPage({
               const thumbnail =
                 item.ProductVariant.images?.[0] ??
                 item.ProductVariant.Product.images?.[0];
-
+              console.log("order.id:", order.id, typeof order.id);
               return (
                 <li key={item.id} className="flex items-center gap-4 py-3">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50">
